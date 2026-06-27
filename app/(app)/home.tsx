@@ -8,7 +8,7 @@ export default function Home() {
     <View style={styles.c}>
       <BrandLockup />
       <Text style={styles.hello}>ברוך הבא! 🐶</Text>
-      <Text style={styles.sub}>{session?.user.email ?? 'מחובר עם Google'}</Text>
+      <Text style={styles.sub} numberOfLines={1}>{session?.user.email ?? 'מחובר עם Google'}</Text>
       <Text style={styles.note}>המפה החיה תגיע בשלב הבא.</Text>
       <Pressable testID="signout-btn" style={styles.btn} onPress={signOut}>
         <Text style={styles.btnText}>התנתק</Text>

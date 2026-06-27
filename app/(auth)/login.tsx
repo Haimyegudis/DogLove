@@ -23,7 +23,7 @@ export default function Login() {
   return (
     <View style={styles.c}>
       <BrandLockup />
-      <Pressable testID="google-btn" style={[styles.btn, styles.google]} onPress={onGoogle}>
+      <Pressable testID="google-btn" disabled={busy} style={[styles.btn, styles.google]} onPress={onGoogle}>
         <Text style={styles.googleText}>התחבר עם Google</Text>
       </Pressable>
       <Text style={styles.or}>או</Text>

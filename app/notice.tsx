@@ -6,7 +6,7 @@ import { setDataNoticeSeen } from '../src/state/consent';
 export default function Notice() {
   const router = useRouter();
   async function accept() {
-    await setDataNoticeSeen();
+    try { await setDataNoticeSeen(); } catch {}
     router.replace('/(auth)/login');
   }
   return (

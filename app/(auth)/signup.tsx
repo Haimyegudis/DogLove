@@ -13,7 +13,11 @@ export default function Signup() {
 
   async function onSignup() {
     if (password.length < 6) { Alert.alert('סיסמה קצרה מדי', 'לפחות 6 תווים'); return; }
-    if (!isAdult(birth, new Date())) {
+    if (!birth.trim()) { Alert.alert('שדה חסר', 'יש להזין תאריך לידה'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(birth.trim())) { Alert.alert('פורמט שגוי', 'הזן תאריך לידה בפורמט YYYY-MM-DD'); return; }
+    const now = new Date();
+    const utcToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    if (!isAdult(birth, utcToday)) {
       Alert.alert('הרשמה נכשלה', 'עליך להיות בן 18 ומעלה כדי להירשם');
       return;
     }
