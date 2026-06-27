@@ -30,6 +30,7 @@ export default function EditProfile() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [dob, setDob] = useState<string | null>(null);
   const [gender, setGender] = useState<Gender | null>(null);
+  const [city, setCity] = useState('');
   const [bio, setBio] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -41,6 +42,7 @@ export default function EditProfile() {
       setPhoto(data.photo_url);
       setDob(data.date_of_birth);
       setGender(data.gender);
+      setCity(data.city ?? '');
       setBio(data.bio ?? '');
     });
   }, [userId]);
@@ -72,7 +74,7 @@ export default function EditProfile() {
       photoUrl = up.url!;
     }
     const { error } = await saveMyProfile(userId, {
-      display_name: name.trim(), photo_url: photoUrl, date_of_birth: dob, gender, bio: bio.trim() || null,
+      display_name: name.trim(), photo_url: photoUrl, date_of_birth: dob, gender, bio: bio.trim() || null, city: city.trim() || null,
     });
     setBusy(false);
     if (error) { Alert.alert('שמירה נכשלה', error); return; }
@@ -119,6 +121,10 @@ export default function EditProfile() {
                   </Pressable>
                 ))}
               </View>
+            </FormField>
+
+            <FormField label="עיר">
+              <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder="עיר מגורים" placeholderTextColor={colors.inkSoft} />
             </FormField>
 
             <FormField label="קצת עליי (אופציונלי)">

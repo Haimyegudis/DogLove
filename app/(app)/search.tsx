@@ -20,12 +20,13 @@ export default function Search() {
   const [mode, setMode] = useState<'dogs' | 'users'>('dogs');
   const [q, setQ] = useState('');
   const [gender, setGender] = useState<string | null>(null);
+  const [city, setCity] = useState('');
   const [dogs, setDogs] = useState<BrowseDog[]>([]);
   const [users, setUsers] = useState<UserResult[]>([]);
 
   async function run() {
-    if (mode === 'dogs') setDogs((await searchDogs(q)).data);
-    else setUsers((await searchUsers(gender, 18, 120)).data);
+    if (mode === 'dogs') setDogs((await searchDogs(q, city)).data);
+    else setUsers((await searchUsers(gender, 18, 120, city)).data);
   }
 
   return (
@@ -56,6 +57,9 @@ export default function Search() {
             </View>
           )}
 
+          <TextInput style={styles.input} placeholder="עיר (אופציונלי)" placeholderTextColor={colors.inkCoolSoft}
+            value={city} onChangeText={setCity} />
+
           <Pressable onPress={run} style={styles.searchBtn}><Text style={styles.searchText}>חפש</Text></Pressable>
 
           {mode === 'dogs'
@@ -68,7 +72,7 @@ export default function Search() {
                   <Avatar uri={u.photo_url} fallback="🧑" size={48} />
                   <View style={styles.userInfo}>
                     <Text style={styles.userName}>{u.display_name ?? 'בעל כלב'}</Text>
-                    <Text style={styles.userMeta}>{u.age} · {u.gender === 'female' ? 'נקבה' : u.gender === 'male' ? 'זכר' : '—'}</Text>
+                    <Text style={styles.userMeta}>{u.age} · {u.gender === 'female' ? 'נקבה' : u.gender === 'male' ? 'זכר' : '—'} · {u.city ?? ''}</Text>
                   </View>
                 </View>
               ))}

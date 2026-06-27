@@ -8,6 +8,7 @@ export interface OwnerProfile {
   date_of_birth: string | null; // ISO YYYY-MM-DD
   gender: Gender | null;
   bio: string | null;
+  city: string | null;
 }
 
 export interface Dog {

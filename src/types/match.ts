@@ -8,6 +8,7 @@ export interface BrowseDog {
   photo_url: string;
   owner_id: string;
   owner_name: string | null;
+  city?: string | null;
 }
 
 export interface PlaydateRequestRow {

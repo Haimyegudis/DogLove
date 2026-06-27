@@ -4,4 +4,5 @@ export interface UserResult {
   photo_url: string | null;
   gender: string | null;
   age: number;
+  city: string | null;
 }

@@ -11,7 +11,7 @@ export async function ensureProfile(userId: string, provider?: string) {
 export async function getMyProfile(userId: string) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, date_of_birth, gender, bio')
+    .select('id, display_name, photo_url, date_of_birth, gender, bio, city')
     .eq('id', userId)
     .single();
   return { data: (data as OwnerProfile) ?? null, error: error?.message ?? null };
