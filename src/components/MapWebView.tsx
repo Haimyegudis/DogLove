@@ -9,10 +9,10 @@ const HTML = `<!DOCTYPE html><html><head>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
   html,body,#map{margin:0;padding:0;height:100%;width:100%}
-  .dog-pin{width:44px;height:44px;border-radius:50%;border:3px solid #fff;
-    box-shadow:0 2px 6px rgba(0,0,0,.35);background:#FFE3D5;background-size:cover;
-    background-position:center;display:flex;align-items:center;justify-content:center;
-    font-size:22px}
+  .dog-pin{width:46px;height:46px;border-radius:50%;border:3px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,.35);background:#FFE3D5;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;font-size:22px}
+  .dog-pin img{width:100%;height:100%;object-fit:cover;display:block}
   .me-pin{width:20px;height:20px;border-radius:50%;background:#2BA7B0;
     border:3px solid #fff;box-shadow:0 0 0 6px rgba(43,167,176,.25)}
 </style>
@@ -41,8 +41,12 @@ const HTML = `<!DOCTYPE html><html><head>
   function dogEl(x){
     var el=document.createElement('div'); el.className='dog-pin';
     el.title = (x.name||'') + (x.breed ? ' · ' + x.breed : '');
-    if(x.photo_url){ el.style.backgroundImage='url('+x.photo_url+')'; }
-    else { el.textContent='🐕'; }
+    if(x.photo_url){
+      var img=document.createElement('img');
+      img.src=x.photo_url; img.alt=x.name||'';
+      img.onerror=function(){ el.removeChild(img); el.textContent='🐕'; };
+      el.appendChild(img);
+    } else { el.textContent='🐕'; }
     return el;
   }
 
