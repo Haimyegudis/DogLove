@@ -25,7 +25,7 @@ export default function Messages() {
           {rows.length === 0 ? (
             <Text style={styles.empty}>אין שיחות עדיין. אשר בקשת משחק כדי להתחיל לשוחח!</Text>
           ) : rows.map((c) => (
-            <Pressable key={c.conversation_id} onPress={() => router.push(`/(app)/chat/${c.conversation_id}`)} style={styles.row}>
+            <Pressable key={c.conversation_id} onPress={() => router.push(`/(app)/chat/${c.conversation_id}?name=${encodeURIComponent(c.other_name ?? 'בעל כלב')}`)} style={styles.row}>
               <Avatar uri={c.other_photo} fallback="🧑" size={52} />
               <View style={styles.info}>
                 <Text style={styles.name}>{c.other_name ?? 'בעל כלב'}</Text>

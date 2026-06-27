@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../../src/state/AuthContext';
 import { listMessages, sendMessage, subscribeMessages } from '../../../src/services/chat';
 import type { Message } from '../../../src/types/chat';
 import { colors, font, radius } from '../../../src/theme';
 
 export default function Chat() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const router = useRouter();
   const { session } = useAuth();
   const userId = session!.user.id;
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const listRef = useRef<FlatList<Message>>(null);
+  const headerTitle = name ?? 'שיחה';
 
   useEffect(() => {
     listMessages(id).then(({ data }) => setMessages(data));
@@ -25,12 +27,22 @@ export default function Chat() {
     const body = text.trim();
     if (!body) return;
     setText('');
-    await sendMessage(id, userId, body);
+    const { error } = await sendMessage(id, userId, body);
+    if (error) {
+      setText(body);
+      Alert.alert('שליחה נכשלה', error);
+    }
   }
 
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{headerTitle}</Text>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backText}>‹</Text>
+          </Pressable>
+        </View>
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <FlatList
             ref={listRef}
@@ -71,6 +83,10 @@ export default function Chat() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bgApp },
   safe: { flex: 1 },
+  header: { flexDirection: 'row-reverse', alignItems: 'center', height: 50, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.lineCool, paddingHorizontal: 12 },
+  headerTitle: { flex: 1, fontFamily: font.bold, fontSize: 17, color: colors.brandDark, textAlign: 'center' },
+  backButton: { padding: 8 },
+  backText: { fontSize: 28, color: colors.brandDark, lineHeight: 32 },
   flex: { flex: 1 },
   list: { padding: 14, gap: 8 },
   bubbleWrap: { flexDirection: 'row' },
