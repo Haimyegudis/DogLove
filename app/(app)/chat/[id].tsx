@@ -6,6 +6,8 @@ import { useAuth } from '../../../src/state/AuthContext';
 import { listMessages, sendMessage, subscribeMessages } from '../../../src/services/chat';
 import type { Message } from '../../../src/types/chat';
 import { colors, font, radius } from '../../../src/theme';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { otherInConversation, schedulePlaydate } from '../../../src/services/playdates';
 
 export default function Chat() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -14,6 +16,8 @@ export default function Chat() {
   const userId = session!.user.id;
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
+  const [showDate, setShowDate] = useState(false);
+  const [pickedDate, setPickedDate] = useState<Date | null>(null);
   const listRef = useRef<FlatList<Message>>(null);
   const headerTitle = name ?? 'שיחה';
 
@@ -39,10 +43,35 @@ export default function Chat() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{headerTitle}</Text>
+          <Pressable onPress={() => setShowDate(true)} style={styles.scheduleButton}>
+            <Text style={styles.scheduleText}>קבע מפגש 📅</Text>
+          </Pressable>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backText}>‹</Text>
           </Pressable>
         </View>
+        {showDate && (
+          <DateTimePicker
+            value={pickedDate ?? new Date(Date.now() + 3600_000)}
+            mode="datetime"
+            onChange={async (_e: DateTimePickerEvent, d?: Date) => {
+              setShowDate(false);
+              if (!d) return;
+              setPickedDate(d);
+              const { data: otherId } = await otherInConversation(id);
+              if (!otherId) { Alert.alert('שגיאה', 'לא נמצא משתתף'); return; }
+              (Alert as any).prompt
+                ? (Alert as any).prompt('מקום המפגש', 'איפה נפגשים?', async (place?: string) => {
+                    const { error } = await schedulePlaydate(userId, otherId, d.toISOString(), place || '');
+                    Alert.alert(error ? 'שגיאה' : 'נקבע! 📅', error || 'המפגש נוסף ליומן.');
+                  })
+                : (async () => {
+                    const { error } = await schedulePlaydate(userId, otherId, d.toISOString(), '');
+                    Alert.alert(error ? 'שגיאה' : 'נקבע! 📅', error || 'המפגש נוסף ליומן.');
+                  })();
+            }}
+          />
+        )}
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <FlatList
             ref={listRef}
@@ -87,6 +116,8 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontFamily: font.bold, fontSize: 17, color: colors.brandDark, textAlign: 'center' },
   backButton: { padding: 8 },
   backText: { fontSize: 28, color: colors.brandDark, lineHeight: 32 },
+  scheduleButton: { paddingHorizontal: 10, paddingVertical: 6 },
+  scheduleText: { fontFamily: font.regular, fontSize: 13, color: colors.brandDark },
   flex: { flex: 1 },
   list: { padding: 14, gap: 8 },
   bubbleWrap: { flexDirection: 'row' },
