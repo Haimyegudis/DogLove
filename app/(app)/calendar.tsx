@@ -16,13 +16,15 @@ const statusLabel: Record<string, string> = { scheduled: 'מתוכנן', cancell
 
 export default function Calendar() {
   const [rows, setRows] = useState<PlaydateRow[]>([]);
-  const load = useCallback(() => { listMyPlaydates().then(({ data }) => setRows(data ?? [])).catch(console.error); }, []);
+  const load = useCallback(() => {
+    listMyPlaydates().then(({ data, error }) => { if (error) { Alert.alert('שגיאה', error); return; } setRows(data ?? []); });
+  }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   function onCancel(id: string) {
     Alert.alert('לבטל את המפגש?', '', [
       { text: 'לא', style: 'cancel' },
-      { text: 'בטל מפגש', style: 'destructive', onPress: async () => { await cancelPlaydate(id); load(); } },
+      { text: 'בטל מפגש', style: 'destructive', onPress: async () => { const { error } = await cancelPlaydate(id); if (error) { Alert.alert('שגיאה', error); return; } load(); } },
     ]);
   }
 

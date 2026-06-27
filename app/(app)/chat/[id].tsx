@@ -18,6 +18,17 @@ export default function Chat() {
   const [text, setText] = useState('');
   const [showDate, setShowDate] = useState(false);
   const [pickedDate, setPickedDate] = useState<Date | null>(null);
+
+  async function confirmSchedule(d: Date) {
+    setShowDate(false);
+    const { data: otherId, error: e1 } = await otherInConversation(id);
+    if (e1) { Alert.alert('שגיאה', e1); return; }
+    if (!otherId) { Alert.alert('שגיאה', 'לא נמצא משתתף'); return; }
+    const place = '';
+    const { error } = await schedulePlaydate(userId, otherId, d.toISOString(), place);
+    if (error) { Alert.alert('שגיאה', error); return; }
+    Alert.alert('נקבע! 📅', 'המפגש נוסף ליומן.');
+  }
   const listRef = useRef<FlatList<Message>>(null);
   const headerTitle = name ?? 'שיחה';
 
@@ -43,7 +54,7 @@ export default function Chat() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{headerTitle}</Text>
-          <Pressable onPress={() => setShowDate(true)} style={styles.scheduleButton}>
+          <Pressable onPress={() => { setPickedDate(new Date(Date.now() + 3600_000)); setShowDate(true); }} style={styles.scheduleButton}>
             <Text style={styles.scheduleText}>קבע מפגש 📅</Text>
           </Pressable>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -51,26 +62,31 @@ export default function Chat() {
           </Pressable>
         </View>
         {showDate && (
-          <DateTimePicker
-            value={pickedDate ?? new Date(Date.now() + 3600_000)}
-            mode="datetime"
-            onChange={async (_e: DateTimePickerEvent, d?: Date) => {
-              setShowDate(false);
-              if (!d) return;
-              setPickedDate(d);
-              const { data: otherId } = await otherInConversation(id);
-              if (!otherId) { Alert.alert('שגיאה', 'לא נמצא משתתף'); return; }
-              (Alert as any).prompt
-                ? (Alert as any).prompt('מקום המפגש', 'איפה נפגשים?', async (place?: string) => {
-                    const { error } = await schedulePlaydate(userId, otherId, d.toISOString(), place || '');
-                    Alert.alert(error ? 'שגיאה' : 'נקבע! 📅', error || 'המפגש נוסף ליומן.');
-                  })
-                : (async () => {
-                    const { error } = await schedulePlaydate(userId, otherId, d.toISOString(), '');
-                    Alert.alert(error ? 'שגיאה' : 'נקבע! 📅', error || 'המפגש נוסף ליומן.');
-                  })();
-            }}
-          />
+          <View style={styles.pickerPanel}>
+            <DateTimePicker
+              value={pickedDate ?? new Date(Date.now() + 3600_000)}
+              mode="datetime"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(_e: DateTimePickerEvent, d?: Date) => {
+                if (Platform.OS === 'android') {
+                  setShowDate(false);
+                  if (_e.type === 'set' && d) confirmSchedule(d);
+                } else if (d) {
+                  setPickedDate(d);
+                }
+              }}
+            />
+            {Platform.OS === 'ios' && (
+              <View style={styles.pickerActions}>
+                <Pressable onPress={() => setShowDate(false)} style={styles.cancelPickerBtn}>
+                  <Text style={styles.cancelPickerText}>ביטול</Text>
+                </Pressable>
+                <Pressable onPress={() => confirmSchedule(pickedDate ?? new Date(Date.now() + 3600_000))} style={styles.confirmPickerBtn}>
+                  <Text style={styles.confirmPickerText}>קבע</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
         )}
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <FlatList
@@ -132,4 +148,10 @@ const styles = StyleSheet.create({
   input: { flex: 1, maxHeight: 110, backgroundColor: colors.bgApp, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, fontFamily: font.regular, color: colors.inkCool, textAlign: 'right', writingDirection: 'rtl' },
   send: { backgroundColor: colors.rose, borderRadius: radius.pill, paddingVertical: 11, paddingHorizontal: 18 },
   sendText: { fontFamily: font.bold, color: colors.white, fontSize: 15 },
+  pickerPanel: { backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.lineCool, paddingBottom: 8 },
+  pickerActions: { flexDirection: 'row-reverse', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 4 },
+  confirmPickerBtn: { backgroundColor: colors.rose, borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 20 },
+  confirmPickerText: { fontFamily: font.bold, color: colors.white, fontSize: 15 },
+  cancelPickerBtn: { paddingVertical: 8, paddingHorizontal: 12 },
+  cancelPickerText: { fontFamily: font.regular, color: colors.inkCool, fontSize: 15 },
 });
