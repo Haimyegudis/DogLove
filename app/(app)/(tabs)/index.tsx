@@ -71,7 +71,7 @@ export default function MapScreen() {
       if (myDogs.length === 0) { Alert.alert('אין כלב', 'הוסף קודם פרופיל כלב כדי לצאת לטיול.'); return; }
       const c = coords ?? (await getCurrentCoords());
       if (!c) { Alert.alert('אין מיקום', 'לא הצלחנו לקבל מיקום.'); return; }
-      const dogId = (myDogs[0] as any).dog_id ?? myDogs[0].id;
+      const dogId = myDogs[0].id;
       const { error } = await startWalk(dogId, c);
       if (error) { Alert.alert('שגיאה', error); return; }
       walkDogId.current = dogId;
