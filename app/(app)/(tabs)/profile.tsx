@@ -40,7 +40,12 @@ export default function Home() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.topbar}>
             <BrandLockup size={28} />
-            <Pressable testID="signout-btn" onPress={signOut}><Text style={styles.signout}>התנתק</Text></Pressable>
+            <View style={styles.topbarActions}>
+              <Pressable onPress={() => router.push('/(app)/privacy')} style={styles.privacyBtn}>
+                <Text style={styles.privacyText}>פרטיות והגדרות 🔒</Text>
+              </Pressable>
+              <Pressable testID="signout-btn" onPress={signOut}><Text style={styles.signout}>התנתק</Text></Pressable>
+            </View>
           </View>
 
           {incomplete ? (
@@ -93,6 +98,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: 20, gap: 16 },
   topbar: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  topbarActions: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+  privacyBtn: { backgroundColor: colors.purpleSoft, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.lineCool },
+  privacyText: { fontFamily: font.medium, color: colors.purple, fontSize: 13 },
   signout: { fontFamily: font.medium, color: colors.caramel, fontSize: 14 },
 
   completeCard: { backgroundColor: colors.white, borderRadius: radius.lg, padding: 24, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: colors.line },
