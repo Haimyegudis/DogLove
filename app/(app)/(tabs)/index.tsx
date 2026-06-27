@@ -9,7 +9,7 @@ import { listMyDogs } from '../../../src/services/dogs';
 import { useAuth } from '../../../src/state/AuthContext';
 import WalkControls from '../../../src/components/WalkControls';
 import type { Coords, NearbyDog } from '../../../src/types/walk';
-import { colors, font } from '../../../src/theme';
+import { colors } from '../../../src/theme';
 
 initMapbox();
 
@@ -23,6 +23,7 @@ export default function MapScreen() {
   const [walking, setWalking] = useState(false);
   const walkDogId = useRef<string | null>(null);
   const watcher = useRef<{ remove: () => void } | null>(null);
+  const toggling = useRef(false);
 
   // Initial location + permission
   useEffect(() => {
@@ -32,7 +33,10 @@ export default function MapScreen() {
       const c = await getCurrentCoords();
       if (c) setCoords(c);
     })();
-    return () => { watcher.current?.remove(); };
+    return () => {
+      watcher.current?.remove();
+      if (walkDogId.current) endWalk(walkDogId.current);
+    };
   }, []);
 
   const refreshNearby = useCallback(async (c: Coords, rM: number) => {
@@ -50,30 +54,36 @@ export default function MapScreen() {
   }, [coords, radiusM, refreshNearby]);
 
   async function onToggleWalk() {
-    if (walking) {
-      watcher.current?.remove();
-      watcher.current = null;
-      if (walkDogId.current) await endWalk(walkDogId.current);
-      walkDogId.current = null;
-      setWalking(false);
-      if (coords) refreshNearby(coords, radiusM);
-      return;
+    if (toggling.current) return;
+    toggling.current = true;
+    try {
+      if (walking) {
+        watcher.current?.remove();
+        watcher.current = null;
+        if (walkDogId.current) await endWalk(walkDogId.current);
+        walkDogId.current = null;
+        setWalking(false);
+        if (coords) refreshNearby(coords, radiusM);
+        return;
+      }
+      // Start: need a dog + a location
+      const { data: myDogs } = await listMyDogs(userId);
+      if (myDogs.length === 0) { Alert.alert('אין כלב', 'הוסף קודם פרופיל כלב כדי לצאת לטיול.'); return; }
+      const c = coords ?? (await getCurrentCoords());
+      if (!c) { Alert.alert('אין מיקום', 'לא הצלחנו לקבל מיקום.'); return; }
+      const dogId = (myDogs[0] as any).dog_id ?? myDogs[0].id;
+      const { error } = await startWalk(dogId, c);
+      if (error) { Alert.alert('שגיאה', error); return; }
+      walkDogId.current = dogId;
+      setWalking(true);
+      // push location every ~20s
+      watcher.current = await watchCoords(async (nc) => {
+        setCoords(nc);
+        if (walkDogId.current) await updateWalkLocation(walkDogId.current, nc);
+      });
+    } finally {
+      toggling.current = false;
     }
-    // Start: need a dog + a location
-    const { data: myDogs } = await listMyDogs(userId);
-    if (myDogs.length === 0) { Alert.alert('אין כלב', 'הוסף קודם פרופיל כלב כדי לצאת לטיול.'); return; }
-    const c = coords ?? (await getCurrentCoords());
-    if (!c) { Alert.alert('אין מיקום', 'לא הצלחנו לקבל מיקום.'); return; }
-    const dogId = (myDogs[0] as any).dog_id ?? myDogs[0].id;
-    const { error } = await startWalk(dogId, c);
-    if (error) { Alert.alert('שגיאה', error); return; }
-    walkDogId.current = dogId;
-    setWalking(true);
-    // push location every ~20s
-    watcher.current = await watchCoords(async (nc) => {
-      setCoords(nc);
-      if (walkDogId.current) await updateWalkLocation(walkDogId.current, nc);
-    });
   }
 
   const center: [number, number] = coords ? [coords.lng, coords.lat] : [34.78, 32.08]; // fallback: Tel Aviv
