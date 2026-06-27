@@ -1,11 +1,7 @@
+import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import Slider from '@react-native-community/slider';
 import { colors, font, radius as r, shadow } from '../theme';
-
-const RADII = [
-  { m: 1000, label: '1 ק"מ' },
-  { m: 3000, label: '3 ק"מ' },
-  { m: 5000, label: '5 ק"מ' },
-];
 
 type Props = {
   walking: boolean;
@@ -16,6 +12,10 @@ type Props = {
 };
 
 export default function WalkControls({ walking, radiusM, nearbyCount, onToggleWalk, onSelectRadius }: Props) {
+  // Live label while dragging; the actual query only commits on release.
+  const [display, setDisplay] = useState(radiusM);
+  const km = (m: number) => (m / 1000).toFixed(1);
+
   return (
     <View style={styles.wrap} pointerEvents="box-none">
       {walking && (
@@ -27,19 +27,23 @@ export default function WalkControls({ walking, radiusM, nearbyCount, onToggleWa
       <View style={[styles.card, shadow.card]}>
         <View style={styles.row}>
           <Text style={styles.count}>{nearbyCount}</Text>
-          <Text style={styles.countLabel}>כלבים פעילים בקרבתך 🐾</Text>
+          <Text style={styles.countLabel}>כלבים פעילים ברדיוס 🐾</Text>
         </View>
 
-        <View style={styles.chips}>
-          {RADII.map((opt) => (
-            <Pressable
-              key={opt.m}
-              onPress={() => onSelectRadius(opt.m)}
-              style={[styles.chip, radiusM === opt.m && styles.chipOn]}
-            >
-              <Text style={[styles.chipText, radiusM === opt.m && styles.chipTextOn]}>{opt.label}</Text>
-            </Pressable>
-          ))}
+        <View style={styles.sliderRow}>
+          <Text style={styles.dist}>{km(display)} ק"מ</Text>
+          <Slider
+            style={styles.slider}
+            minimumValue={500}
+            maximumValue={10000}
+            step={500}
+            value={radiusM}
+            minimumTrackTintColor={colors.coral}
+            maximumTrackTintColor={colors.line}
+            thumbTintColor={colors.coralDeep}
+            onValueChange={setDisplay}
+            onSlidingComplete={onSelectRadius}
+          />
         </View>
 
         <Pressable
@@ -62,11 +66,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row-reverse', alignItems: 'baseline', gap: 8, justifyContent: 'center' },
   count: { fontFamily: font.black, fontSize: 26, color: colors.coralDeep },
   countLabel: { fontFamily: font.medium, fontSize: 14, color: colors.caramel },
-  chips: { flexDirection: 'row-reverse', justifyContent: 'center', gap: 8 },
-  chip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: r.pill, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.cream },
-  chipOn: { backgroundColor: colors.coralSoft, borderColor: colors.coral },
-  chipText: { fontFamily: font.medium, color: colors.caramel, fontSize: 14 },
-  chipTextOn: { color: colors.coralDeep, fontFamily: font.bold },
+  sliderRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
+  dist: { fontFamily: font.bold, fontSize: 14, color: colors.coralDeep, width: 64, textAlign: 'center' },
+  slider: { flex: 1, height: 36 },
   cta: { borderRadius: r.pill, paddingVertical: 16, alignItems: 'center' },
   ctaStart: { backgroundColor: colors.coral },
   ctaEnd: { backgroundColor: colors.bark },

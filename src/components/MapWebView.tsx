@@ -33,12 +33,32 @@ const HTML = `<!DOCTYPE html><html><head>
         }
       });
     } catch(e){}
+    drawCircle();
   });
 
-  var dogMarkers=[]; var meMarker=null; var centered=false; var lastCenter=null;
+  var dogMarkers=[]; var meMarker=null; var centered=false; var lastCenter=null; var lastRadius=0;
 
   // Recenter the map on the user (triggered by the focus button).
   window.recenter = function(){ if(lastCenter){ map.flyTo({center:[lastCenter.lng,lastCenter.lat], zoom:15, duration:600}); } };
+
+  // Geodesic circle polygon (approx) for the chosen search radius.
+  function circlePolygon(lng, lat, radiusM, points){
+    points = points||72; var coords=[];
+    var dLat = radiusM/110540;
+    var dLon = radiusM/(111320*Math.cos(lat*Math.PI/180));
+    for(var i=0;i<=points;i++){ var t=(i/points)*2*Math.PI; coords.push([lng+dLon*Math.cos(t), lat+dLat*Math.sin(t)]); }
+    return { type:'Feature', geometry:{ type:'Polygon', coordinates:[coords] } };
+  }
+  function drawCircle(){
+    if(!lastCenter || !lastRadius || !map.isStyleLoaded()) return;
+    var gj = circlePolygon(lastCenter.lng, lastCenter.lat, lastRadius, 72);
+    if(map.getSource('radius')){ map.getSource('radius').setData(gj); }
+    else {
+      map.addSource('radius', { type:'geojson', data:gj });
+      map.addLayer({ id:'radius-fill', type:'fill', source:'radius', paint:{ 'fill-color':'#FF5E8A', 'fill-opacity':0.08 } });
+      map.addLayer({ id:'radius-line', type:'line', source:'radius', paint:{ 'line-color':'#FF5E8A', 'line-width':2, 'line-opacity':0.5 } });
+    }
+  }
 
   function meEl(){ var el=document.createElement('div'); el.className='me-pin'; return el; }
   function dogEl(x){
@@ -56,12 +76,14 @@ const HTML = `<!DOCTYPE html><html><head>
   window.setData = function(jsonStr){
     try{
       var d = JSON.parse(jsonStr); var c = d.center; var dogs = d.dogs||[];
+      if(typeof d.radiusM === 'number'){ lastRadius = d.radiusM; }
       if(c){
         lastCenter = c;
         if(!meMarker){ meMarker = new maplibregl.Marker({element:meEl()}).setLngLat([c.lng,c.lat]).addTo(map); }
         else { meMarker.setLngLat([c.lng,c.lat]); }
         if(!centered){ map.jumpTo({center:[c.lng,c.lat], zoom:14}); centered=true; }
       }
+      drawCircle();
       dogMarkers.forEach(function(m){m.remove();}); dogMarkers=[];
       dogs.forEach(function(x){
         var m=new maplibregl.Marker({element:dogEl(x)}).setLngLat([x.lng,x.lat]).addTo(map);
@@ -73,9 +95,9 @@ const HTML = `<!DOCTYPE html><html><head>
   window.addEventListener('message', function(ev){ window.setData(ev.data); });
 </script></body></html>`;
 
-export default function MapWebView({ center, dogs, focusNonce = 0 }: { center: Coords | null; dogs: NearbyDog[]; focusNonce?: number }) {
+export default function MapWebView({ center, dogs, radiusM = 0, focusNonce = 0 }: { center: Coords | null; dogs: NearbyDog[]; radiusM?: number; focusNonce?: number }) {
   const ref = useRef<WebView>(null);
-  const payload = JSON.stringify({ center, dogs });
+  const payload = JSON.stringify({ center, dogs, radiusM });
   useEffect(() => {
     ref.current?.injectJavaScript(`window.setData(${JSON.stringify(payload)}); true;`);
   }, [payload]);

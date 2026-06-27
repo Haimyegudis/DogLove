@@ -87,7 +87,7 @@ export default function MapScreen() {
 
   return (
     <View style={styles.fill}>
-      <MapWebView center={coords} dogs={dogs} focusNonce={focusNonce} />
+      <MapWebView center={coords} dogs={dogs} radiusM={radiusM} focusNonce={focusNonce} />
       <SafeAreaView style={styles.focusWrap} pointerEvents="box-none">
         <Pressable testID="focus-me" onPress={onFocusMe} style={[styles.focusBtn, shadow.soft]}>
           <Text style={styles.focusIcon}>📍</Text>
