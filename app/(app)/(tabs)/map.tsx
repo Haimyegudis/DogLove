@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import MapWebView from '../../../src/components/MapWebView';
-import { colors, shadow } from '../../../src/theme';
+import { colors, font, shadow } from '../../../src/theme';
 import { requestLocationPermission, getCurrentCoords, getLastKnownCoords, watchCoords } from '../../../src/services/location';
+import { geocodeCity } from '../../../src/services/geocode';
 import { startWalk, endWalk, updateWalkLocation, nearbyDogs } from '../../../src/services/walk';
 import { subscribeActiveWalks } from '../../../src/services/walkRealtime';
 import { listMyDogs } from '../../../src/services/dogs';
@@ -23,12 +24,26 @@ export default function MapScreen() {
   const watcher = useRef<{ remove: () => void } | null>(null);
   const toggling = useRef(false);
   const [focusNonce, setFocusNonce] = useState(0);
+  const [searchCenter, setSearchCenter] = useState<Coords | null>(null);
+  const [cityQ, setCityQ] = useState('');
+
+  // The map view + nearby query center on the searched city if set, else GPS.
+  const viewCenter = searchCenter ?? coords;
 
   async function onFocusMe() {
-    // Recenter immediately on whatever we already have, then refine.
+    // Clear any city search, recenter on me immediately, then refine GPS.
+    setSearchCenter(null);
     setFocusNonce((n) => n + 1);
     const c = await getCurrentCoords();
     if (c) { setCoords(c); setFocusNonce((n) => n + 1); }
+  }
+
+  async function onSearchCity() {
+    const c = await geocodeCity(cityQ);
+    if (!c) { Alert.alert('לא נמצא', 'לא מצאנו את המקום הזה.'); return; }
+    setSearchCenter(c);
+    setFocusNonce((n) => n + 1);
+    refreshNearby(c, radiusM);
   }
 
   useEffect(() => {
@@ -51,15 +66,15 @@ export default function MapScreen() {
     setDogs(data);
   }, []);
 
-  useEffect(() => { if (coords) refreshNearby(coords, radiusM); }, [coords, radiusM, refreshNearby]);
+  useEffect(() => { if (viewCenter) refreshNearby(viewCenter, radiusM); }, [viewCenter, radiusM, refreshNearby]);
 
   // Refresh nearby dogs whenever the Map tab regains focus.
-  useFocusEffect(useCallback(() => { if (coords) refreshNearby(coords, radiusM); }, [coords, radiusM, refreshNearby]));
+  useFocusEffect(useCallback(() => { if (viewCenter) refreshNearby(viewCenter, radiusM); }, [viewCenter, radiusM, refreshNearby]));
 
   useEffect(() => {
-    const sub = subscribeActiveWalks(() => { if (coords) refreshNearby(coords, radiusM); });
+    const sub = subscribeActiveWalks(() => { if (viewCenter) refreshNearby(viewCenter, radiusM); });
     return () => { sub.unsubscribe(); };
-  }, [coords, radiusM, refreshNearby]);
+  }, [viewCenter, radiusM, refreshNearby]);
 
   async function onToggleWalk() {
     if (toggling.current) return;
@@ -95,11 +110,30 @@ export default function MapScreen() {
 
   return (
     <View style={styles.fill}>
-      <MapWebView center={coords} dogs={dogs} radiusM={radiusM} focusNonce={focusNonce} />
-      <SafeAreaView style={styles.focusWrap} pointerEvents="box-none">
-        <Pressable testID="focus-me" onPress={onFocusMe} style={[styles.focusBtn, shadow.soft]}>
-          <Text style={styles.focusIcon}>📍</Text>
-        </Pressable>
+      <MapWebView center={viewCenter} me={coords} dogs={dogs} radiusM={radiusM} focusNonce={focusNonce} />
+      <SafeAreaView style={styles.topWrap} pointerEvents="box-none">
+        <View style={[styles.searchBar, shadow.soft]}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="חפש עיר או מקום…"
+            placeholderTextColor={colors.inkCoolSoft}
+            value={cityQ}
+            onChangeText={setCityQ}
+            onSubmitEditing={onSearchCity}
+            returnKeyType="search"
+          />
+          <Pressable onPress={onSearchCity} style={styles.searchGo}><Text style={styles.searchGoText}>🔎</Text></Pressable>
+        </View>
+        <View style={styles.topActions} pointerEvents="box-none">
+          {searchCenter ? (
+            <Pressable onPress={onFocusMe} style={[styles.pill, shadow.soft]}>
+              <Text style={styles.pillText}>↩︎ חזרה אליי</Text>
+            </Pressable>
+          ) : <View />}
+          <Pressable testID="focus-me" onPress={onFocusMe} style={[styles.focusBtn, shadow.soft]}>
+            <Text style={styles.focusIcon}>📍</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
       <WalkControls
         walking={walking}
@@ -114,7 +148,14 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  focusWrap: { position: 'absolute', top: 0, left: 0, padding: 14 },
+  topWrap: { position: 'absolute', top: 0, left: 0, right: 0, padding: 12, gap: 10 },
+  searchBar: { flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: colors.white, borderRadius: 999, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.lineCool },
+  searchInput: { flex: 1, paddingVertical: 11, fontSize: 15, fontFamily: font.regular, color: colors.inkCool, textAlign: 'right', writingDirection: 'rtl' },
+  searchGo: { paddingHorizontal: 4 },
+  searchGoText: { fontSize: 18 },
+  topActions: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  pill: { backgroundColor: colors.white, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.lineCool },
+  pillText: { fontFamily: font.bold, fontSize: 13, color: colors.coralDeep },
   focusBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.lineCool },
   focusIcon: { fontSize: 22 },
 });

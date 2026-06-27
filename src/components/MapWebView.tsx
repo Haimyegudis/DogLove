@@ -76,12 +76,14 @@ const HTML = `<!DOCTYPE html><html><head>
 
   window.setData = function(jsonStr){
     try{
-      var d = JSON.parse(jsonStr); var c = d.center; var dogs = d.dogs||[];
+      var d = JSON.parse(jsonStr); var c = d.center; var me = d.me || d.center; var dogs = d.dogs||[];
       if(typeof d.radiusM === 'number'){ lastRadius = d.radiusM; }
+      if(me){
+        if(!meMarker){ meMarker = new maplibregl.Marker({element:meEl()}).setLngLat([me.lng,me.lat]).addTo(map); }
+        else { meMarker.setLngLat([me.lng,me.lat]); }
+      }
       if(c){
         lastCenter = c;
-        if(!meMarker){ meMarker = new maplibregl.Marker({element:meEl()}).setLngLat([c.lng,c.lat]).addTo(map); }
-        else { meMarker.setLngLat([c.lng,c.lat]); }
         if(!centered){ map.jumpTo({center:[c.lng,c.lat], zoom:14}); centered=true; }
       }
       drawCircle();
@@ -96,9 +98,9 @@ const HTML = `<!DOCTYPE html><html><head>
   window.addEventListener('message', function(ev){ window.setData(ev.data); });
 </script></body></html>`;
 
-export default function MapWebView({ center, dogs, radiusM = 0, focusNonce = 0 }: { center: Coords | null; dogs: NearbyDog[]; radiusM?: number; focusNonce?: number }) {
+export default function MapWebView({ center, me = null, dogs, radiusM = 0, focusNonce = 0 }: { center: Coords | null; me?: Coords | null; dogs: NearbyDog[]; radiusM?: number; focusNonce?: number }) {
   const ref = useRef<WebView>(null);
-  const payload = JSON.stringify({ center, dogs, radiusM });
+  const payload = JSON.stringify({ center, me, dogs, radiusM });
   useEffect(() => {
     ref.current?.injectJavaScript(`window.setData(${JSON.stringify(payload)}); true;`);
   }, [payload]);
