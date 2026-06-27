@@ -50,13 +50,14 @@ const HTML = `<!DOCTYPE html><html><head>
     return { type:'Feature', geometry:{ type:'Polygon', coordinates:[coords] } };
   }
   function drawCircle(){
-    if(!lastCenter || !lastRadius || !map.isStyleLoaded()) return;
+    if(!lastCenter || !lastRadius) return;
+    if(!map.isStyleLoaded()){ map.once('idle', drawCircle); return; }
     var gj = circlePolygon(lastCenter.lng, lastCenter.lat, lastRadius, 72);
     if(map.getSource('radius')){ map.getSource('radius').setData(gj); }
     else {
       map.addSource('radius', { type:'geojson', data:gj });
-      map.addLayer({ id:'radius-fill', type:'fill', source:'radius', paint:{ 'fill-color':'#FF5E8A', 'fill-opacity':0.08 } });
-      map.addLayer({ id:'radius-line', type:'line', source:'radius', paint:{ 'line-color':'#FF5E8A', 'line-width':2, 'line-opacity':0.5 } });
+      map.addLayer({ id:'radius-fill', type:'fill', source:'radius', paint:{ 'fill-color':'#FF5E8A', 'fill-opacity':0.14 } });
+      map.addLayer({ id:'radius-line', type:'line', source:'radius', paint:{ 'line-color':'#F2613B', 'line-width':3, 'line-opacity':0.8 } });
     }
   }
 

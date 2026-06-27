@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import MapWebView from '../../../src/components/MapWebView';
 import { colors, shadow } from '../../../src/theme';
-import { requestLocationPermission, getCurrentCoords, watchCoords } from '../../../src/services/location';
+import { requestLocationPermission, getCurrentCoords, getLastKnownCoords, watchCoords } from '../../../src/services/location';
 import { startWalk, endWalk, updateWalkLocation, nearbyDogs } from '../../../src/services/walk';
 import { subscribeActiveWalks } from '../../../src/services/walkRealtime';
 import { listMyDogs } from '../../../src/services/dogs';
@@ -25,16 +25,19 @@ export default function MapScreen() {
   const [focusNonce, setFocusNonce] = useState(0);
 
   async function onFocusMe() {
-    const c = await getCurrentCoords();
-    if (c) setCoords(c);
+    // Recenter immediately on whatever we already have, then refine.
     setFocusNonce((n) => n + 1);
+    const c = await getCurrentCoords();
+    if (c) { setCoords(c); setFocusNonce((n) => n + 1); }
   }
 
   useEffect(() => {
     (async () => {
       const ok = await requestLocationPermission();
       if (!ok) { Alert.alert('צריך הרשאת מיקום', 'כדי להראות כלבים קרובים, אפשר גישה למיקום.'); return; }
-      const c = await getCurrentCoords();
+      const last = await getLastKnownCoords();  // instant first center
+      if (last) setCoords(last);
+      const c = await getCurrentCoords();        // precise fix
       if (c) setCoords(c);
     })();
     return () => {

@@ -6,6 +6,14 @@ export async function requestLocationPermission(): Promise<boolean> {
   return granted;
 }
 
+// Instant: device's last cached fix (may be null/slightly stale). Use for a
+// fast first center while the precise fix resolves.
+export async function getLastKnownCoords(): Promise<Coords | null> {
+  const pos = await Location.getLastKnownPositionAsync();
+  if (!pos) return null;
+  return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+}
+
 export async function getCurrentCoords(): Promise<Coords | null> {
   const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
   if (!pos) return null;
