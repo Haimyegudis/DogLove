@@ -4,3 +4,6 @@ node_modules/
 dist/
 web-build/
 *.log
+
+# SDD process scratch (briefs, reports, review diffs)
+.superpowers/
