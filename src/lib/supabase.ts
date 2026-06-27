@@ -16,5 +16,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // PKCE is the secure OAuth flow for native apps: the browser returns a
+    // short-lived `code` that we exchange for a session (see signInWithGoogle).
+    flowType: 'pkce',
   },
 });
