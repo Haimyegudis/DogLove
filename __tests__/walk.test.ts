@@ -1,7 +1,6 @@
-jest.mock('../src/lib/supabase');
-
-import { supabase } from '../src/lib/supabase';
+jest.mock('../src/lib/supabase', () => ({ supabase: { rpc: jest.fn() } }));
 import { startWalk, updateWalkLocation, endWalk, nearbyDogs } from '../src/services/walk';
+import { supabase } from '../src/lib/supabase';
 
 const mockRpc = supabase.rpc as jest.Mock;
 

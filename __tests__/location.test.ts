@@ -1,4 +1,9 @@
-jest.mock('expo-location');
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn(),
+  getCurrentPositionAsync: jest.fn(),
+  watchPositionAsync: jest.fn(),
+  Accuracy: { Balanced: 3 },
+}));
 import { requestLocationPermission, getCurrentCoords, watchCoords } from '../src/services/location';
 import * as Location from 'expo-location';
 
