@@ -22,6 +22,19 @@ const HTML = `<!DOCTYPE html><html><head>
   try { maplibregl.setRTLTextPlugin('https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js', function(){}, true); } catch(e){}
 
   var map = new maplibregl.Map({ container:'map', style:'https://tiles.openfreemap.org/styles/bright', center:[34.78,32.08], zoom:13 });
+
+  // Prefer Hebrew place names on every text label (fallback to default name).
+  map.on('load', function(){
+    try {
+      var layers = (map.getStyle().layers)||[];
+      layers.forEach(function(layer){
+        if(layer.type==='symbol' && layer.layout && layer.layout['text-field']!==undefined){
+          map.setLayoutProperty(layer.id, 'text-field', ['coalesce', ['get','name:he'], ['get','name:latin'], ['get','name']]);
+        }
+      });
+    } catch(e){}
+  });
+
   var dogMarkers=[]; var meMarker=null; var centered=false;
 
   function meEl(){ var el=document.createElement('div'); el.className='me-pin'; return el; }
