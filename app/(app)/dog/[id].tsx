@@ -67,7 +67,9 @@ export default function DogForm() {
     Alert.alert('למחוק את הכלב?', 'הפעולה אינה הפיכה', [
       { text: 'ביטול', style: 'cancel' },
       { text: 'מחק', style: 'destructive', onPress: async () => {
-        await deleteDog(id); router.replace('/(app)/home');
+        const { error } = await deleteDog(id);
+        if (error) { Alert.alert('מחיקה נכשלה', error); return; }
+        router.replace('/(app)/home');
       } },
     ]);
   }

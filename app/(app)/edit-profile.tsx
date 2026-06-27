@@ -15,7 +15,10 @@ import { GENDER_OPTIONS, Gender } from '../../src/types/profile';
 import { colors, font, radius, shadow } from '../../src/theme';
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const toDisplay = (iso: string) => { const d = new Date(iso); return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`; };
+const toDisplay = (iso: string) => {
+  const [y, m, d] = iso.split('-');
+  return `${d}-${m}-${y}`;
+};
 const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 export default function EditProfile() {
