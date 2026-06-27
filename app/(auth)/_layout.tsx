@@ -9,7 +9,7 @@ export default function AuthLayout() {
   // Once authenticated, leave the auth group automatically (covers email +
   // Google sign-in completing via onAuthStateChange).
   if (loading) return <View style={{ flex: 1, backgroundColor: colors.cream }} />;
-  if (session) return <Redirect href="/(app)/home" />;
+  if (session) return <Redirect href="/(app)/(tabs)" />;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }

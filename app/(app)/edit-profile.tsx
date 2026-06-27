@@ -76,7 +76,7 @@ export default function EditProfile() {
     });
     setBusy(false);
     if (error) { Alert.alert('שמירה נכשלה', error); return; }
-    router.replace('/(app)/home');
+    router.replace('/(app)/(tabs)');
   }
 
   return (

@@ -15,5 +15,5 @@ export default function Index() {
   }
   if (!noticeSeen) return <Redirect href="/notice" />;
   if (!session) return <Redirect href="/(auth)/login" />;
-  return <Redirect href="/(app)/home" />;
+  return <Redirect href="/(app)/(tabs)" />;
 }

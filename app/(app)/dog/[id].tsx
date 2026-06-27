@@ -60,7 +60,7 @@ export default function DogForm() {
     const { error } = isNew ? await createDog(userId, payload) : await updateDog(id, payload);
     setBusy(false);
     if (error) { Alert.alert('שמירה נכשלה', error); return; }
-    router.replace('/(app)/home');
+    router.replace('/(app)/(tabs)');
   }
 
   function onDelete() {
@@ -69,7 +69,7 @@ export default function DogForm() {
       { text: 'מחק', style: 'destructive', onPress: async () => {
         const { error } = await deleteDog(id);
         if (error) { Alert.alert('מחיקה נכשלה', error); return; }
-        router.replace('/(app)/home');
+        router.replace('/(app)/(tabs)');
       } },
     ]);
   }

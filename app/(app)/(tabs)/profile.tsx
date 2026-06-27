@@ -2,15 +2,15 @@ import { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import DogParkBackground from '../../src/components/DogParkBackground';
-import BrandLockup from '../../src/components/BrandLockup';
-import Avatar from '../../src/components/Avatar';
-import { useAuth } from '../../src/state/AuthContext';
-import { getMyProfile } from '../../src/services/profile';
-import { listMyDogs } from '../../src/services/dogs';
-import { ageFromISO } from '../../src/lib/age';
-import { OwnerProfile, Dog, GENDER_OPTIONS } from '../../src/types/profile';
-import { colors, font, radius, shadow } from '../../src/theme';
+import DogParkBackground from '../../../src/components/DogParkBackground';
+import BrandLockup from '../../../src/components/BrandLockup';
+import Avatar from '../../../src/components/Avatar';
+import { useAuth } from '../../../src/state/AuthContext';
+import { getMyProfile } from '../../../src/services/profile';
+import { listMyDogs } from '../../../src/services/dogs';
+import { ageFromISO } from '../../../src/lib/age';
+import { OwnerProfile, Dog, GENDER_OPTIONS } from '../../../src/types/profile';
+import { colors, font, radius, shadow } from '../../../src/theme';
 
 const genderLabel = (g: OwnerProfile['gender']) => GENDER_OPTIONS.find((o) => o.value === g)?.label ?? '';
 
