@@ -104,10 +104,10 @@ const styles = StyleSheet.create({
   statLabel: { fontFamily: font.regular, fontSize: 11, color: colors.inkCoolSoft, textAlign: 'center' },
 
   section: { fontFamily: font.black, fontSize: 17, color: colors.brandDark, textAlign: 'right', marginTop: 4 },
-  grid: { flexDirection: 'row-reverse', gap: 12 },
-  feature: { flex: 1, backgroundColor: colors.white, borderRadius: 20, padding: 16, gap: 6, borderWidth: 1, borderColor: colors.lineCool },
-  featureIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  featureTitle: { fontFamily: font.bold, fontSize: 15, color: colors.brandDark, textAlign: 'right' },
-  featureSub: { fontFamily: font.regular, fontSize: 12, color: colors.inkCoolSoft, textAlign: 'right' },
+  grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 12 },
+  feature: { width: '31%', aspectRatio: 1, backgroundColor: colors.white, borderRadius: 20, padding: 11, gap: 5, justifyContent: 'center', borderWidth: 1, borderColor: colors.lineCool },
+  featureIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  featureTitle: { fontFamily: font.bold, fontSize: 13, color: colors.brandDark, textAlign: 'right' },
+  featureSub: { fontFamily: font.regular, fontSize: 10, lineHeight: 13, color: colors.inkCoolSoft, textAlign: 'right' },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
 });

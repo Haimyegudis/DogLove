@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MapWebView from '../../../src/components/MapWebView';
+import { colors, shadow } from '../../../src/theme';
 import { requestLocationPermission, getCurrentCoords, watchCoords } from '../../../src/services/location';
 import { startWalk, endWalk, updateWalkLocation, nearbyDogs } from '../../../src/services/walk';
 import { subscribeActiveWalks } from '../../../src/services/walkRealtime';
@@ -19,6 +21,13 @@ export default function MapScreen() {
   const walkDogId = useRef<string | null>(null);
   const watcher = useRef<{ remove: () => void } | null>(null);
   const toggling = useRef(false);
+  const [focusNonce, setFocusNonce] = useState(0);
+
+  async function onFocusMe() {
+    const c = await getCurrentCoords();
+    if (c) setCoords(c);
+    setFocusNonce((n) => n + 1);
+  }
 
   useEffect(() => {
     (async () => {
@@ -78,7 +87,12 @@ export default function MapScreen() {
 
   return (
     <View style={styles.fill}>
-      <MapWebView center={coords} dogs={dogs} />
+      <MapWebView center={coords} dogs={dogs} focusNonce={focusNonce} />
+      <SafeAreaView style={styles.focusWrap} pointerEvents="box-none">
+        <Pressable testID="focus-me" onPress={onFocusMe} style={[styles.focusBtn, shadow.soft]}>
+          <Text style={styles.focusIcon}>📍</Text>
+        </Pressable>
+      </SafeAreaView>
       <WalkControls
         walking={walking}
         radiusM={radiusM}
@@ -90,4 +104,9 @@ export default function MapScreen() {
   );
 }
 
-const styles = StyleSheet.create({ fill: { flex: 1 } });
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  focusWrap: { position: 'absolute', top: 0, left: 0, padding: 14 },
+  focusBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.lineCool },
+  focusIcon: { fontSize: 22 },
+});

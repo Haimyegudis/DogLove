@@ -35,7 +35,10 @@ const HTML = `<!DOCTYPE html><html><head>
     } catch(e){}
   });
 
-  var dogMarkers=[]; var meMarker=null; var centered=false;
+  var dogMarkers=[]; var meMarker=null; var centered=false; var lastCenter=null;
+
+  // Recenter the map on the user (triggered by the focus button).
+  window.recenter = function(){ if(lastCenter){ map.flyTo({center:[lastCenter.lng,lastCenter.lat], zoom:15, duration:600}); } };
 
   function meEl(){ var el=document.createElement('div'); el.className='me-pin'; return el; }
   function dogEl(x){
@@ -54,6 +57,7 @@ const HTML = `<!DOCTYPE html><html><head>
     try{
       var d = JSON.parse(jsonStr); var c = d.center; var dogs = d.dogs||[];
       if(c){
+        lastCenter = c;
         if(!meMarker){ meMarker = new maplibregl.Marker({element:meEl()}).setLngLat([c.lng,c.lat]).addTo(map); }
         else { meMarker.setLngLat([c.lng,c.lat]); }
         if(!centered){ map.jumpTo({center:[c.lng,c.lat], zoom:14}); centered=true; }
@@ -69,12 +73,16 @@ const HTML = `<!DOCTYPE html><html><head>
   window.addEventListener('message', function(ev){ window.setData(ev.data); });
 </script></body></html>`;
 
-export default function MapWebView({ center, dogs }: { center: Coords | null; dogs: NearbyDog[] }) {
+export default function MapWebView({ center, dogs, focusNonce = 0 }: { center: Coords | null; dogs: NearbyDog[]; focusNonce?: number }) {
   const ref = useRef<WebView>(null);
   const payload = JSON.stringify({ center, dogs });
   useEffect(() => {
     ref.current?.injectJavaScript(`window.setData(${JSON.stringify(payload)}); true;`);
   }, [payload]);
+  // Recenter when the focus button bumps the nonce.
+  useEffect(() => {
+    if (focusNonce > 0) ref.current?.injectJavaScript('window.recenter && window.recenter(); true;');
+  }, [focusNonce]);
   return (
     <WebView
       ref={ref}
