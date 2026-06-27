@@ -16,6 +16,7 @@ beforeEach(() => jest.clearAllMocks());
 test('listMyDogs filters by owner and returns rows', async () => {
   mockOrder.mockResolvedValue({ data: [{ id: 'd1', name: 'Rocky' }], error: null });
   const res = await listMyDogs('u1');
+  expect(mockSelect).toHaveBeenCalledWith('id, owner_id, name, breed, age, size, photo_url, bio');
   expect(mockEqSel).toHaveBeenCalledWith('owner_id', 'u1');
   expect(res.data).toHaveLength(1);
   expect(res.error).toBeNull();
@@ -41,6 +42,7 @@ test('updateDog updates by id', async () => {
 test('deleteDog deletes by id', async () => {
   mockEqDel.mockResolvedValue({ error: null });
   const res = await deleteDog('d1');
+  expect(mockDel).toHaveBeenCalled();
   expect(mockEqDel).toHaveBeenCalledWith('id', 'd1');
   expect(res.error).toBeNull();
 });

@@ -23,6 +23,7 @@ beforeEach(() => {
 test('getMyProfile returns the row', async () => {
   mockSingle.mockResolvedValue({ data: { id: 'u1', display_name: 'Maya' }, error: null });
   const res = await getMyProfile('u1');
+  expect(mockSelect).toHaveBeenCalledWith('id, display_name, photo_url, date_of_birth, gender, bio');
   expect(mockEq).toHaveBeenCalledWith('id', 'u1');
   expect(res.data?.display_name).toBe('Maya');
   expect(res.error).toBeNull();
