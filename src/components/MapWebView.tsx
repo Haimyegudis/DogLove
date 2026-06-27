@@ -7,21 +7,45 @@ const HTML = `<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<style>html,body,#map{margin:0;padding:0;height:100%;width:100%}</style>
+<style>
+  html,body,#map{margin:0;padding:0;height:100%;width:100%}
+  .dog-pin{width:44px;height:44px;border-radius:50%;border:3px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,.35);background:#FFE3D5;background-size:cover;
+    background-position:center;display:flex;align-items:center;justify-content:center;
+    font-size:22px}
+  .me-pin{width:20px;height:20px;border-radius:50%;background:#2BA7B0;
+    border:3px solid #fff;box-shadow:0 0 0 6px rgba(43,167,176,.25)}
+</style>
 </head><body><div id="map"></div>
 <script>
-  var map = new maplibregl.Map({ container:'map', style:'https://tiles.openfreemap.org/styles/bright', center:[34.78,32.08], zoom:13, attributionControl:false });
+  // Render Hebrew/Arabic map labels in the correct direction.
+  try { maplibregl.setRTLTextPlugin('https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js', function(){}, true); } catch(e){}
+
+  var map = new maplibregl.Map({ container:'map', style:'https://tiles.openfreemap.org/styles/bright', center:[34.78,32.08], zoom:13 });
   var dogMarkers=[]; var meMarker=null; var centered=false;
+
+  function meEl(){ var el=document.createElement('div'); el.className='me-pin'; return el; }
+  function dogEl(x){
+    var el=document.createElement('div'); el.className='dog-pin';
+    el.title = (x.name||'') + (x.breed ? ' · ' + x.breed : '');
+    if(x.photo_url){ el.style.backgroundImage='url('+x.photo_url+')'; }
+    else { el.textContent='🐕'; }
+    return el;
+  }
+
   window.setData = function(jsonStr){
     try{
       var d = JSON.parse(jsonStr); var c = d.center; var dogs = d.dogs||[];
       if(c){
-        if(!meMarker){ meMarker = new maplibregl.Marker({color:'#2BA7B0'}).setLngLat([c.lng,c.lat]).addTo(map); }
+        if(!meMarker){ meMarker = new maplibregl.Marker({element:meEl()}).setLngLat([c.lng,c.lat]).addTo(map); }
         else { meMarker.setLngLat([c.lng,c.lat]); }
         if(!centered){ map.jumpTo({center:[c.lng,c.lat], zoom:14}); centered=true; }
       }
       dogMarkers.forEach(function(m){m.remove();}); dogMarkers=[];
-      dogs.forEach(function(x){ var m=new maplibregl.Marker({color:'#FF7A4D'}).setLngLat([x.lng,x.lat]).addTo(map); dogMarkers.push(m); });
+      dogs.forEach(function(x){
+        var m=new maplibregl.Marker({element:dogEl(x)}).setLngLat([x.lng,x.lat]).addTo(map);
+        dogMarkers.push(m);
+      });
     }catch(e){}
   };
   document.addEventListener('message', function(ev){ window.setData(ev.data); });
