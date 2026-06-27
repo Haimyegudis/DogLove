@@ -1,23 +1,30 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, font } from '../theme';
 
-type Props = { size?: number };
+type Props = { size?: number; onLight?: boolean };
 
-export default function BrandLockup({ size = 40 }: Props) {
-  // Row reversed so the Hebrew word sits on the right, LOVE on the left,
-  // with a heart nuzzled between them.
+// Wordmark: "כלב love" — Hebrew word (dark) on the right, lowercase rose
+// "love" on the left, with a small paw badge. Matches the reference mockup.
+export default function BrandLockup({ size = 36, onLight = true }: Props) {
   return (
     <View testID="brand-lockup" style={styles.row}>
-      <Text style={[styles.love, { fontSize: size }]}>LOVE</Text>
-      <Text style={[styles.heart, { fontSize: size * 0.7 }]}>♥</Text>
-      <Text style={[styles.kelev, { fontSize: size }]}>כלב</Text>
+      <View style={[styles.badge, { width: size * 0.86, height: size * 0.86, borderRadius: size }]}>
+        <Text style={{ fontSize: size * 0.46 }}>🐾</Text>
+      </View>
+      <Text style={[styles.love, { fontSize: size }]}>love</Text>
+      <Text style={[styles.kelev, { fontSize: size, color: onLight ? colors.brandDark : colors.white }]}>כלב</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
-  kelev: { fontFamily: font.black, color: colors.bark },
-  love: { fontFamily: font.black, color: colors.coralDeep, letterSpacing: 1 },
-  heart: { fontFamily: font.bold, color: colors.heart, marginTop: 4 },
+  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  kelev: { fontFamily: font.black },
+  love: { fontFamily: font.black, color: colors.rose },
+  badge: {
+    backgroundColor: colors.roseSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
 });

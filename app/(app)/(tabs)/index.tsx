@@ -1,93 +1,111 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import MapWebView from '../../../src/components/MapWebView';
-import { requestLocationPermission, getCurrentCoords, watchCoords } from '../../../src/services/location';
-import { startWalk, endWalk, updateWalkLocation, nearbyDogs } from '../../../src/services/walk';
-import { subscribeActiveWalks } from '../../../src/services/walkRealtime';
-import { listMyDogs } from '../../../src/services/dogs';
-import { useAuth } from '../../../src/state/AuthContext';
-import WalkControls from '../../../src/components/WalkControls';
-import type { Coords, NearbyDog } from '../../../src/types/walk';
+import { useCallback, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useRouter } from 'expo-router';
+import BrandLockup from '../../../src/components/BrandLockup';
+import { supabase } from '../../../src/lib/supabase';
+import { listIncoming } from '../../../src/services/match';
+import { colors, font, radius, gradients } from '../../../src/theme';
 
-export default function MapScreen() {
-  const { session } = useAuth();
-  const userId = session!.user.id;
-  const [coords, setCoords] = useState<Coords | null>(null);
-  const [radiusM, setRadiusM] = useState(3000);
-  const [dogs, setDogs] = useState<NearbyDog[]>([]);
-  const [walking, setWalking] = useState(false);
-  const walkDogId = useRef<string | null>(null);
-  const watcher = useRef<{ remove: () => void } | null>(null);
-  const toggling = useRef(false);
-
-  useEffect(() => {
-    (async () => {
-      const ok = await requestLocationPermission();
-      if (!ok) { Alert.alert('צריך הרשאת מיקום', 'כדי להראות כלבים קרובים, אפשר גישה למיקום.'); return; }
-      const c = await getCurrentCoords();
-      if (c) setCoords(c);
-    })();
-    return () => {
-      watcher.current?.remove();
-      if (walkDogId.current) endWalk(walkDogId.current);
-    };
-  }, []);
-
-  const refreshNearby = useCallback(async (c: Coords, rM: number) => {
-    const { data } = await nearbyDogs(c, rM);
-    setDogs(data);
-  }, []);
-
-  useEffect(() => { if (coords) refreshNearby(coords, radiusM); }, [coords, radiusM, refreshNearby]);
-
-  useEffect(() => {
-    const sub = subscribeActiveWalks(() => { if (coords) refreshNearby(coords, radiusM); });
-    return () => { sub.unsubscribe(); };
-  }, [coords, radiusM, refreshNearby]);
-
-  async function onToggleWalk() {
-    if (toggling.current) return;
-    toggling.current = true;
-    try {
-      if (walking) {
-        watcher.current?.remove();
-        watcher.current = null;
-        if (walkDogId.current) await endWalk(walkDogId.current);
-        walkDogId.current = null;
-        setWalking(false);
-        if (coords) refreshNearby(coords, radiusM);
-        return;
-      }
-      const { data: myDogs } = await listMyDogs(userId);
-      if (myDogs.length === 0) { Alert.alert('אין כלב', 'הוסף קודם פרופיל כלב כדי לצאת לטיול.'); return; }
-      const c = coords ?? (await getCurrentCoords());
-      if (!c) { Alert.alert('אין מיקום', 'לא הצלחנו לקבל מיקום.'); return; }
-      const dogId = myDogs[0].id;
-      const { error } = await startWalk(dogId, c);
-      if (error) { Alert.alert('שגיאה', error); return; }
-      walkDogId.current = dogId;
-      setWalking(true);
-      watcher.current = await watchCoords(async (nc) => {
-        setCoords(nc);
-        if (walkDogId.current) await updateWalkLocation(walkDogId.current, nc);
-      });
-    } finally {
-      toggling.current = false;
-    }
-  }
-
+function Stat({ n, label, tint, bg, icon }: { n: number; label: string; tint: string; bg: string; icon: string }) {
   return (
-    <View style={styles.fill}>
-      <MapWebView center={coords} dogs={dogs} />
-      <WalkControls
-        walking={walking}
-        radiusM={radiusM}
-        nearbyCount={dogs.length}
-        onToggleWalk={onToggleWalk}
-        onSelectRadius={setRadiusM}
-      />
+    <View style={styles.stat}>
+      <View style={[styles.statIcon, { backgroundColor: bg }]}><Text style={{ fontSize: 18 }}>{icon}</Text></View>
+      <Text style={[styles.statN, { color: tint }]}>{n}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({ fill: { flex: 1 } });
+function Feature({ title, sub, bg, icon, onPress }: { title: string; sub: string; bg: string; icon: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.feature, pressed && styles.pressed]}>
+      <View style={[styles.featureIcon, { backgroundColor: bg }]}><Text style={{ fontSize: 22 }}>{icon}</Text></View>
+      <Text style={styles.featureTitle}>{title}</Text>
+      <Text style={styles.featureSub}>{sub}</Text>
+    </Pressable>
+  );
+}
+
+export default function Home() {
+  const router = useRouter();
+  const [walkers, setWalkers] = useState(0);
+  const [dogs, setDogs] = useState(0);
+  const [pending, setPending] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    (async () => {
+      const w = await supabase.from('walk_sessions').select('id', { count: 'exact', head: true }).eq('is_active', true);
+      const d = await supabase.from('dogs').select('id', { count: 'exact', head: true });
+      const inc = await listIncoming();
+      if (!active) return;
+      setWalkers(w.count ?? 0);
+      setDogs(d.count ?? 0);
+      setPending((inc.data || []).filter((r) => r.status === 'pending').length);
+    })();
+    return () => { active = false; };
+  }, []));
+
+  return (
+    <View style={styles.screen}>
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.topbar}>
+            <BrandLockup size={28} />
+            <View style={styles.avatar}><Text style={{ fontSize: 18 }}>🐶</Text></View>
+          </View>
+
+          <LinearGradient colors={gradients.hero as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+            <Text style={styles.heroTitle}>היי, חבר הכלבים! 🐾</Text>
+            <Text style={styles.heroSub}>בוא נמצא חברים חדשים ועוד הרפתקאות בשכונה</Text>
+            <Pressable style={styles.heroBtn} onPress={() => router.push('/(app)/(tabs)/map')}>
+              <Text style={styles.heroBtnText}>גלה הרפתקאות חדשות! 🦮</Text>
+            </Pressable>
+          </LinearGradient>
+
+          <View style={styles.statsRow}>
+            <Stat n={walkers} label="מטיילים פעילים" tint={colors.green} bg={colors.greenSoft} icon="🐾" />
+            <Stat n={dogs} label="כלבים בקהילה" tint={colors.purple} bg={colors.purpleSoft} icon="🐕" />
+            <Stat n={pending} label="בקשות ממתינות" tint={colors.rose} bg={colors.roseSoft} icon="❤️" />
+          </View>
+
+          <Text style={styles.section}>קיצורי דרך ✨</Text>
+          <View style={styles.grid}>
+            <Feature title="צא לטיול" sub="כלבים פעילים על המפה" bg={colors.greenSoft} icon="🗺️" onPress={() => router.push('/(app)/(tabs)/map')} />
+            <Feature title="מצא חבר" sub="בקשות משחק לכלב שלך" bg={colors.roseSoft} icon="❤️" onPress={() => router.push('/(app)/(tabs)/playdates')} />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.bgApp },
+  safe: { flex: 1 },
+  scroll: { padding: 18, gap: 16 },
+  topbar: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.roseSoft, alignItems: 'center', justifyContent: 'center' },
+
+  hero: { borderRadius: 24, padding: 22, gap: 8 },
+  heroTitle: { fontFamily: font.black, fontSize: 22, color: colors.white, textAlign: 'right' },
+  heroSub: { fontFamily: font.medium, fontSize: 14, color: 'rgba(255,255,255,0.92)', textAlign: 'right' },
+  heroBtn: { alignSelf: 'flex-start', backgroundColor: colors.white, borderRadius: 999, paddingVertical: 11, paddingHorizontal: 18, marginTop: 8 },
+  heroBtnText: { fontFamily: font.bold, color: colors.purple, fontSize: 14 },
+
+  statsRow: { flexDirection: 'row-reverse', gap: 10 },
+  stat: { flex: 1, backgroundColor: colors.white, borderRadius: 18, paddingVertical: 14, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.lineCool },
+  statIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  statN: { fontFamily: font.black, fontSize: 22 },
+  statLabel: { fontFamily: font.regular, fontSize: 11, color: colors.inkCoolSoft, textAlign: 'center' },
+
+  section: { fontFamily: font.black, fontSize: 17, color: colors.brandDark, textAlign: 'right', marginTop: 4 },
+  grid: { flexDirection: 'row-reverse', gap: 12 },
+  feature: { flex: 1, backgroundColor: colors.white, borderRadius: 20, padding: 16, gap: 6, borderWidth: 1, borderColor: colors.lineCool },
+  featureIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  featureTitle: { fontFamily: font.bold, fontSize: 15, color: colors.brandDark, textAlign: 'right' },
+  featureSub: { fontFamily: font.regular, fontSize: 12, color: colors.inkCoolSoft, textAlign: 'right' },
+  pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
+});

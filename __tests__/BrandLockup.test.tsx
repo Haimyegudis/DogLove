@@ -5,5 +5,5 @@ test('renders both parts of the brand name', async () => {
   const { getByText, getByTestId } = await render(<BrandLockup />);
   expect(getByTestId('brand-lockup')).toBeTruthy();
   expect(getByText('כלב')).toBeTruthy();
-  expect(getByText('LOVE')).toBeTruthy();
+  expect(getByText('love')).toBeTruthy();
 });

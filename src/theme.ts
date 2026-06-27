@@ -28,6 +28,25 @@ export const colors = {
   white: '#FFFFFF',
   line: '#EAD7C2',
   danger: '#D7443E',
+
+  // --- "Pastel Pup Dashboard" tokens (aligned to the reference mockup) ---
+  bgApp: '#F4F5FB',        // cool light app background
+  brandDark: '#2D2A4A',    // "כלב" wordmark + headings on light bg
+  rose: '#FF5E8A',         // the "love" accent / primary pink
+  roseSoft: '#FFE1EC',
+  purple: '#7C5CE6',
+  purpleSoft: '#EAE4FF',
+  green: '#22C28B',
+  greenSoft: '#D6F7EC',
+  lineCool: '#E9E9F3',     // hairline on the cool background
+  inkCool: '#3A3950',      // body text on light bg
+  inkCoolSoft: '#8E8DA8',  // secondary text on light bg
+};
+
+// Gradients (consumed by expo-linear-gradient `colors` prop).
+export const gradients = {
+  hero: ['#7C5CE6', '#FF6FA5', '#FFB06B'] as const,    // purple → pink → peach
+  rose: ['#FF6FA5', '#FF5E8A'] as const,
 };
 
 export const font = {
