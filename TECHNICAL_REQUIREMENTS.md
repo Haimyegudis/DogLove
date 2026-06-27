@@ -4,12 +4,13 @@
 
 **App name:** **כלב LOVE** — Hebrew word **כלב** ("dog") rendered on the **right**, the word **LOVE** on the **left** (natural right-to-left composition). Working/internal project name: *DogLove*.
 
-**Version:** 1.1
+**Version:** 1.2
 **Date:** 2026-06-27
 **Status:** Approved design — ready for implementation planning
 **Author:** Product owner (QA) + Claude Code
 
 ### Change log
+- **1.2** — Added 18+ age gate at sign-up; expanded owner profile with photo, age, and gender; clarified required vs optional dog-profile fields (name, type, age, photo required; description optional); added a **playdate calendar** (scheduled playdates with date/time, location, and the dog + owner you're meeting); added **search** — dogs by type and users by location, age, and gender; reaffirmed data-privacy guarantees for the new fields.
 - **1.1** — Added Google sign-in; full feature catalog (all features, incl. future); expanded security & privacy with data-exposure transparency/notifications; UI/UX & branding section (RTL Hebrew name, gesture-first, performance); reference to attached mockup as visual source-of-truth.
 - **1.0** — Initial approved MVP design.
 
@@ -37,11 +38,13 @@ In one line: **DogLove is Tinder's matchmaking and Waze's live map, built for do
 
 ### 1.1 MVP feature set
 
-1. **Authentication** — sign in with **Google account** *or* create a new account with **email + password**; log in / log out.
-2. **Profiles** — one owner profile, one or more dog profiles, with photos.
+1. **Authentication** — sign in with **Google account** *or* create a new account with **email + password**; log in / log out. **Users must be at least 18 years old.**
+2. **Profiles** — one owner profile (name, photo, age, gender, bio) and one or more dog profiles (name, type, age, photo required; description optional), with photos.
 3. **Live map + radius** — see active dogs nearby, choose a search radius, see how many dogs are active around you. Location is shared **only** while the user is "out on a walk."
 4. **Matchmaking** — browse nearby dogs and send a playdate request.
 5. **Chat** — real-time messaging between owners after a playdate is accepted.
+6. **Search** — find dogs by **type**, and find users by **location, age, and gender**.
+7. **Playdate calendar** — see scheduled playdates: date/time, location, and which dog + owner you're meeting.
 
 ### 1.2 Out of scope for MVP
 
@@ -57,8 +60,8 @@ This is the complete vision. The **Phase** column says when each feature is buil
 |---|---|---|---|
 | F1 | **Sign in with Google** | One-tap login with a Google account | **MVP** |
 | F2 | **Email/password account** | Create account, log in, log out, reset password | **MVP** |
-| F3 | **Owner profile** | Name, photo, bio | **MVP** |
-| F4 | **Dog profile(s)** | One or more dogs: name, breed, age, size, photo, bio | **MVP** |
+| F3 | **Owner profile** | Name, photo, **age, gender**, bio | **MVP** |
+| F4 | **Dog profile(s)** | One or more dogs: name, **type/breed, age, photo (required)**, size, description/bio (optional) | **MVP** |
 | F5 | **Live walk map** | Tap Start Walk → dog appears on a shared map for others nearby | **MVP** |
 | F6 | **Radius selector** | Choose 1/3/5 km search range | **MVP** |
 | F7 | **Active-dogs-nearby count** | Live count of dogs currently walking within the radius | **MVP** |
@@ -68,6 +71,10 @@ This is the complete vision. The **Phase** column says when each feature is buil
 | F11 | **Real-time chat** | Message the other owner once a playdate is accepted | **MVP** |
 | F12 | **Push notifications** | New message, playdate request, request accepted | **MVP** |
 | F13 | **Privacy & consent center** | View/manage permissions, what's shared, delete account & data | **MVP (core) → expanded later** |
+| F25 | **18+ age gate** | Sign-up blocked for users under 18; age confirmed at registration | **MVP** |
+| F26 | **Search dogs by type** | Filter/find dogs by breed/type | **MVP** |
+| F27 | **Search users** | Find users by location, age, and gender | **MVP** |
+| F28 | **Playdate calendar** | Calendar of scheduled playdates: date/time, location, the dog + owner you're meeting | **MVP** |
 | F14 | **Photo feed / social wall** | Post dog photos; nearby/followed owners see a feed | Phase 2 |
 | F15 | **Fitness challenges** | Step/distance goals, badges, leaderboards | Phase 2 |
 | F16 | **Scheduled walks** | Set a planned walk time; notify nearby owners; coordinate group walks | Phase 2 |
@@ -156,12 +163,18 @@ PostgreSQL schema. All tables protected by Row-Level Security (Section 7).
 |---|---|---|
 | id | uuid (PK) | equals `auth.users.id` |
 | display_name | text | required |
-| photo_url | text | nullable; points to Supabase Storage |
+| photo_url | text | required; points to Supabase Storage |
+| date_of_birth | date | required; used to enforce 18+ gate at sign-up |
+| age | int | derived from `date_of_birth` (years); used in user search |
+| gender | text | required; enum-like `male` / `female` / `other` / `prefer_not_to_say` |
+| home_location | geography(Point, 4326) | nullable; coarse/approx location used for "search users by location" (not live walk position) |
 | bio | text | nullable |
 | push_token | text | nullable; Expo push token for notifications |
-| is_discoverable | boolean | default true; user can hide from matchmaking via Privacy center |
+| is_discoverable | boolean | default true; user can hide from matchmaking/search via Privacy center |
 | auth_provider | text | `google` or `email` (informational) |
 | created_at | timestamptz | default now() |
+
+> **18+ enforcement:** `date_of_birth` is required at registration; the app rejects sign-up if the computed age is under 18 (F25). Server-side validation backs the client check.
 
 ### 4.2 `dogs`
 | Column | Type | Notes |
@@ -169,12 +182,14 @@ PostgreSQL schema. All tables protected by Row-Level Security (Section 7).
 | id | uuid (PK) | |
 | owner_id | uuid (FK → profiles.id) | required |
 | name | text | required |
-| breed | text | nullable |
-| age | int | nullable (years) |
+| breed | text | **required** — the dog's **type/breed**; indexed for "search dogs by type" |
+| age | int | **required** (years) |
 | size | text | enum-like: `S` / `M` / `L` |
-| photo_url | text | nullable |
-| bio | text | nullable |
+| photo_url | text | **required**; points to Supabase Storage |
+| description | text | nullable (optional free-text description / bio) |
 | created_at | timestamptz | default now() |
+
+> **Required dog fields:** name, type (breed), age, and photo are required; description is optional (F4).
 
 ### 4.3 `walk_sessions` — drives the live map
 | Column | Type | Notes |
@@ -215,7 +230,24 @@ Created automatically when a playdate request is accepted. Unique on the unorder
 | body | text | required |
 | created_at | timestamptz | default now() |
 
-### 4.7 Photos
+### 4.7 `scheduled_playdates` — the calendar
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid (PK) | |
+| conversation_id | uuid (FK → conversations.id) | the accepted-playdate chat this was arranged in; nullable if scheduled directly |
+| organizer_id | uuid (FK → profiles.id) | owner who created the entry |
+| guest_id | uuid (FK → profiles.id) | the other owner being met |
+| organizer_dog_id | uuid (FK → dogs.id) | dog the organizer brings |
+| guest_dog_id | uuid (FK → dogs.id) | dog the guest brings |
+| scheduled_at | timestamptz | required; date + time of the playdate |
+| location_name | text | human-readable place (e.g. "Corner Park") |
+| location | geography(Point, 4326) | nullable; meeting point for map display |
+| status | text | `scheduled` / `cancelled` / `completed` |
+| created_at | timestamptz | default now() |
+
+Each owner's **calendar** is the set of `scheduled_playdates` where they are `organizer_id` or `guest_id`. The calendar view shows, per entry: date/time, location, and the dog + owner they're meeting (F28). Both participants see the same entry.
+
+### 4.8 Photos
 
 Dog and owner images are stored in **Supabase Storage** buckets (e.g. `avatars`, `dog-photos`). Database tables store only the resulting `photo_url`. No images are stored in the database itself.
 
@@ -230,12 +262,13 @@ Dog and owner images are stored in **Supabase Storage** buckets (e.g. `avatars`,
 - FR-1.4 Invalid credentials show a clear error.
 - FR-1.5 A new auth user (Google or email) automatically gets a `profiles` row (via trigger or first-login bootstrap).
 - FR-1.6 On first sign-in the user sees the **data-exposure notice** (FR-6.x) before any data is shared.
+- FR-1.7 **Age gate:** registration requires the user's date of birth; users **under 18 are blocked** from creating an account. Validated client-side and server-side; the under-18 case shows a clear message and no profile is created.
 
 ### 5.2 Profiles
-- FR-2.1 User can create/edit their owner profile (name, bio, photo).
-- FR-2.2 User can add one or more dogs (name, breed, age, size, bio, photo).
+- FR-2.1 User can create/edit their owner profile with **name, photo, age (date of birth), gender**, and an optional bio. Photo, age, and gender are required.
+- FR-2.2 User can add one or more dogs. Required: **name, type (breed), age, photo**. Optional: **description**, size.
 - FR-2.3 User can upload and replace photos for owner and dogs.
-- FR-2.4 Basic validation (required fields, age numeric, image size limit).
+- FR-2.4 Basic validation (required fields enforced, age numeric, gender from allowed set, image size limit).
 
 ### 5.3 Live map + radius — Flow A & B
 **Start a walk → appear on map:**
@@ -293,6 +326,36 @@ The app must make it obvious, in plain language, **what data is being shared and
 - FR-6.7 Each permission request (location, notifications, photos) is preceded by an in-app explanation of why it's needed and what it exposes.
 - FR-6.8 Notifications/alerts inform the user of meaningful exposure changes (e.g. "You are now visible on the map").
 
+### 5.7 Search — Flow E
+**Search dogs by type:**
+1. User opens search → enters/selects a dog **type (breed)**.
+2. App queries `dogs` filtered by `breed`, scoped to discoverable owners.
+3. Results list dog cards; tapping one opens the profile (and Request Playdate where applicable).
+
+**Search users by location, age, gender:**
+1. User opens user search → sets any of: **location** (area/radius from `home_location`), **age** range, **gender**.
+2. App queries `profiles` (respecting `is_discoverable` and RLS) matching the filters.
+3. Results list user cards.
+
+Requirements:
+- FR-7.1 Search dogs by type (breed), case-insensitive partial match.
+- FR-7.2 Search users by any combination of location, age range, and gender.
+- FR-7.3 Search respects privacy: only `is_discoverable` users/dogs appear; a user can exclude themselves from search via the Privacy center.
+- FR-7.4 Location-based user search uses coarse `home_location`, **not** live walk position; live location is never exposed through search.
+
+### 5.8 Playdate calendar — Flow F
+1. After a playdate is accepted (and arranged in chat), either owner creates a **scheduled playdate**: date/time, location, the dog they bring, and the dog/owner they're meeting → row in `scheduled_playdates`.
+2. The entry appears on **both** owners' calendars.
+3. The calendar screen lists upcoming (and past) playdates; each entry shows date/time, location, and the dog + owner being met.
+4. Either participant can cancel an entry (`status = cancelled`); both are notified.
+
+Requirements:
+- FR-8.1 User can schedule a playdate with date/time and location, linked to a dog and the other owner.
+- FR-8.2 The scheduled playdate is visible on both participants' calendars with date/time, location, and the dog + owner being met.
+- FR-8.3 Calendar lists upcoming playdates (and shows past/completed ones).
+- FR-8.4 Either participant can cancel; the other is notified (push, per F12).
+- FR-8.5 Calendar entries are private to the two participants (RLS, Section 7).
+
 ---
 
 ## 6. Non-functional requirements
@@ -315,6 +378,8 @@ The app must make it obvious, in plain language, **what data is being shared and
   - A user can read/write only `walk_sessions` for dogs they own; all users can *read* active sessions for map display (location only, no private data).
   - A user can read `messages` only in conversations they belong to.
   - A user can read `playdate_requests` only where they are sender or recipient.
+  - A user can read/write a `scheduled_playdates` row only where they are `organizer_id` or `guest_id`; calendar entries are private to the two participants.
+- **Search privacy:** search returns only profiles/dogs whose owner has `is_discoverable = true`; user search matches on `age`, `gender`, and coarse `home_location` only — never live walk location. Date of birth itself is never exposed to other users (only derived age, and only within the user's chosen discoverability).
 - Location data minimized: only lat/lng of an active walk is readable by others; no history retained beyond the active session in MVP.
 - Auth handled entirely by Supabase Auth (hashed passwords, session tokens managed by the platform).
 - Secrets (Supabase keys, Mapbox token) stored in Expo environment config, not committed to source control. Only the public anon key ships in the app; RLS is the real protection layer.
@@ -374,13 +439,15 @@ Each slice is independently runnable and testable on a phone before proceeding.
 | # | Slice | Acceptance / QA focus |
 |---|---|---|
 | 0 | **Setup** — Expo app runs, Supabase project created, RTL + branding shell (כלב LOVE splash), QR → app on phone | App launches on the QA owner's phone; name renders RTL correctly |
-| 1 | **Auth** — Google sign-in, email sign-up, log in/out, first-run data-exposure notice | Google login, account creation, wrong-password error, session persistence, notice shown |
-| 2 | **Profiles** — owner + dog profiles, photo upload | Create/edit, validation, photo upload/replace |
+| 1 | **Auth** — Google sign-in, email sign-up, **18+ age gate**, log in/out, first-run data-exposure notice | Google login, account creation, **under-18 sign-up blocked**, wrong-password error, session persistence, notice shown |
+| 2 | **Profiles** — owner profile (name, photo, **age, gender**, bio) + dog profiles (name, **type, age, photo** required, description optional), photo upload | Create/edit, required-field validation, photo upload/replace |
 | 3 | **Map base** — Mapbox renders, user location, radius picker | Map loads, location shown, radius switches |
 | 4 | **Live walk** — Start/End walk, pre-walk data-exposure notice, sharing banner, pin appears/disappears, nearby count | Two phones see each other; notice + banner shown; pin clears on End Walk |
 | 5 | **Matchmaking** — swipeable nearby dog cards, request/accept/decline playdate | Full request lifecycle across two accounts; swipe gestures feel smooth |
 | 6 | **Chat** — messaging after accepted playdate, real-time + push | Live send/receive, offline push notification |
-| 7 | **Privacy center** — view/manage what's shared, permission explanations, delete account & data | Toggle visibility, delete account removes data |
+| 7 | **Search** — search dogs by type; search users by location, age, gender | Type filter returns matching dogs; user filters combine; non-discoverable users hidden |
+| 8 | **Calendar** — schedule a playdate (date/time, location, dog + owner); both calendars update; cancel + notify | Entry visible on both accounts; correct date/time/location/dog/owner; cancel notifies |
+| 9 | **Privacy center** — view/manage what's shared, permission explanations, delete account & data | Toggle visibility, delete account removes data |
 
 **QA loop per slice:** code written → exact run commands provided → QA owner runs and tests on phone → defects reported → fixed → re-verified → next slice.
 
