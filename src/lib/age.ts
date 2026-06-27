@@ -30,3 +30,15 @@ export function isAdult(birthISO: string, now: Date): boolean {
 
   return age >= 18;
 }
+
+export function ageFromISO(birthISO: string, now: Date): number {
+  if (!birthISO) return 0;
+  const birth = new Date(birthISO);
+  if (isNaN(birth.getTime())) return 0;
+  let age = now.getUTCFullYear() - birth.getUTCFullYear();
+  const beforeBirthday =
+    now.getUTCMonth() < birth.getUTCMonth() ||
+    (now.getUTCMonth() === birth.getUTCMonth() && now.getUTCDate() < birth.getUTCDate());
+  if (beforeBirthday) age -= 1;
+  return age < 0 ? 0 : age;
+}
