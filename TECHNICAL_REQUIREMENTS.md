@@ -1,11 +1,17 @@
-# DogLove — Technical Requirements Document
+# כלב LOVE — Technical Requirements Document
 
 > **Tinder meets Waze for dogs and their owners** — a live map of dogs out walking right now, plus playdate matchmaking and chat.
 
-**Version:** 1.0
+**App name:** **כלב LOVE** — Hebrew word **כלב** ("dog") rendered on the **right**, the word **LOVE** on the **left** (natural right-to-left composition). Working/internal project name: *DogLove*.
+
+**Version:** 1.1
 **Date:** 2026-06-27
 **Status:** Approved design — ready for implementation planning
 **Author:** Product owner (QA) + Claude Code
+
+### Change log
+- **1.1** — Added Google sign-in; full feature catalog (all features, incl. future); expanded security & privacy with data-exposure transparency/notifications; UI/UX & branding section (RTL Hebrew name, gesture-first, performance); reference to attached mockup as visual source-of-truth.
+- **1.0** — Initial approved MVP design.
 
 ---
 
@@ -31,7 +37,7 @@ In one line: **DogLove is Tinder's matchmaking and Waze's live map, built for do
 
 ### 1.1 MVP feature set
 
-1. **Authentication** — email + password sign up / log in / log out.
+1. **Authentication** — sign in with **Google account** *or* create a new account with **email + password**; log in / log out.
 2. **Profiles** — one owner profile, one or more dog profiles, with photos.
 3. **Live map + radius** — see active dogs nearby, choose a search radius, see how many dogs are active around you. Location is shared **only** while the user is "out on a walk."
 4. **Matchmaking** — browse nearby dogs and send a playdate request.
@@ -39,7 +45,42 @@ In one line: **DogLove is Tinder's matchmaking and Waze's live map, built for do
 
 ### 1.2 Out of scope for MVP
 
-Fitness challenges, photo feed / social wall, scheduled walks, habit tracking, iPhone release (the chosen stack supports it later at near-zero extra cost), payments.
+The features below are **part of the product vision** and documented in full in Section 1.3, but are **not built in the first release**. MVP = the five items in 1.1.
+
+Out of MVP (built in later phases): fitness challenges, photo feed / social wall, scheduled walks, dog habit tracking, iPhone release, group walks/events, ratings & reviews, lost-dog alerts, vet/service directory, payments/premium.
+
+### 1.3 Full feature catalog (everything the app will do, now and later)
+
+This is the complete vision. The **Phase** column says when each feature is built. Nothing here is dropped — only sequenced.
+
+| # | Feature | What it does | Phase |
+|---|---|---|---|
+| F1 | **Sign in with Google** | One-tap login with a Google account | **MVP** |
+| F2 | **Email/password account** | Create account, log in, log out, reset password | **MVP** |
+| F3 | **Owner profile** | Name, photo, bio | **MVP** |
+| F4 | **Dog profile(s)** | One or more dogs: name, breed, age, size, photo, bio | **MVP** |
+| F5 | **Live walk map** | Tap Start Walk → dog appears on a shared map for others nearby | **MVP** |
+| F6 | **Radius selector** | Choose 1/3/5 km search range | **MVP** |
+| F7 | **Active-dogs-nearby count** | Live count of dogs currently walking within the radius | **MVP** |
+| F8 | **Location sharing control** | Location shared only during an active walk; End Walk removes it | **MVP** |
+| F9 | **Data-exposure notice** | Clear in-app notice of exactly what each action shares, before sharing | **MVP** |
+| F10 | **Matchmaking / playdate requests** | Browse nearby dogs, send a playdate request, accept/decline | **MVP** |
+| F11 | **Real-time chat** | Message the other owner once a playdate is accepted | **MVP** |
+| F12 | **Push notifications** | New message, playdate request, request accepted | **MVP** |
+| F13 | **Privacy & consent center** | View/manage permissions, what's shared, delete account & data | **MVP (core) → expanded later** |
+| F14 | **Photo feed / social wall** | Post dog photos; nearby/followed owners see a feed | Phase 2 |
+| F15 | **Fitness challenges** | Step/distance goals, badges, leaderboards | Phase 2 |
+| F16 | **Scheduled walks** | Set a planned walk time; notify nearby owners; coordinate group walks | Phase 2 |
+| F17 | **Dog habit tracking** | Log and follow recurring behaviors (meals, walks, mood, health notes) | Phase 2 |
+| F18 | **Group walks & events** | Create/join local dog meetups | Phase 3 |
+| F19 | **Ratings & reviews** | Rate owners/playdates to build trust | Phase 3 |
+| F20 | **Lost-dog alerts** | Broadcast a lost-dog alert to nearby users | Phase 3 |
+| F21 | **Vet / service directory** | Nearby vets, groomers, parks, dog-friendly places | Phase 3 |
+| F22 | **iPhone release** | Same codebase built for iOS | Phase 3 |
+| F23 | **Premium / payments** | Optional paid tier (extended radius, advanced filters, etc.) | Phase 4 |
+| F24 | **Moderation & reporting** | Report/block users, content moderation, safety tooling | Phase 2 (basic) → Phase 3 (full) |
+
+Each non-MVP feature gets its own design → spec → plan → build cycle when its phase begins.
 
 ---
 
@@ -92,7 +133,8 @@ Two systems only. The product owner does **not** run a custom server; Supabase i
 | Layer | Technology | Rationale |
 |---|---|---|
 | Mobile app | **React Native + Expo (managed workflow)** | One codebase → Android now, iPhone later. Expo Go lets the QA owner test instantly on a phone via QR code — no native build toolchain. |
-| Backend / DB / Auth / Realtime / Storage | **Supabase** | Single managed service covering accounts, Postgres database, real-time subscriptions, file storage. PostGIS gives built-in geographic radius queries. Generous free tier. |
+| Backend / DB / Auth / Realtime / Storage | **Supabase** | Single managed service covering accounts (incl. **Google OAuth** + email/password), Postgres database, real-time subscriptions, file storage. PostGIS gives built-in geographic radius queries. Generous free tier. |
+| UI / RTL / gestures | **React Native** + gesture & animation libraries; RTL layout | Hebrew-first **כלב LOVE** branding, smooth gesture-driven UX, 60 fps target |
 | Geo queries | **PostGIS** (Supabase extension) | "Active dogs within X km" is a native spatial query, not custom math. |
 | Map rendering | **Mapbox** (`@rnmapbox/maps`) | Cost-effective vs raw Google Maps; strong React Native support. |
 | Photo storage | **Supabase Storage** | Object storage included; tables hold only the `photo_url`. |
@@ -117,6 +159,8 @@ PostgreSQL schema. All tables protected by Row-Level Security (Section 7).
 | photo_url | text | nullable; points to Supabase Storage |
 | bio | text | nullable |
 | push_token | text | nullable; Expo push token for notifications |
+| is_discoverable | boolean | default true; user can hide from matchmaking via Privacy center |
+| auth_provider | text | `google` or `email` (informational) |
 | created_at | timestamptz | default now() |
 
 ### 4.2 `dogs`
@@ -180,10 +224,12 @@ Dog and owner images are stored in **Supabase Storage** buckets (e.g. `avatars`,
 ## 5. Functional requirements & flows
 
 ### 5.1 Authentication
-- FR-1.1 User can sign up with email + password.
-- FR-1.2 User can log in and log out.
-- FR-1.3 Invalid credentials show a clear error.
-- FR-1.4 A new auth user automatically gets a `profiles` row (via trigger or first-login bootstrap).
+- FR-1.1 User can **sign in with a Google account** (Supabase Google OAuth provider).
+- FR-1.2 User can create a new account with **email + password**.
+- FR-1.3 User can log in and log out; email users can reset their password.
+- FR-1.4 Invalid credentials show a clear error.
+- FR-1.5 A new auth user (Google or email) automatically gets a `profiles` row (via trigger or first-login bootstrap).
+- FR-1.6 On first sign-in the user sees the **data-exposure notice** (FR-6.x) before any data is shared.
 
 ### 5.2 Profiles
 - FR-2.1 User can create/edit their owner profile (name, bio, photo).
@@ -235,6 +281,18 @@ Requirements:
 - FR-5.3 Push notification on new message when app is backgrounded/closed.
 - FR-5.4 Chat only available between owners with an accepted playdate (an existing conversation).
 
+### 5.6 Privacy, consent & data-exposure transparency
+The app must make it obvious, in plain language, **what data is being shared and with whom**, and let the user control it.
+
+- FR-6.1 On first sign-in, show a **data-exposure notice**: what the app collects (account, dog profile, location while walking) and who can see it.
+- FR-6.2 Before the **first** Start Walk, show a clear notice: *"While your walk is active, nearby users can see your dog's live location and profile. It stops the moment you end the walk."* User must confirm.
+- FR-6.3 A persistent, visible indicator whenever location is being shared (e.g. an "On a walk — sharing location" banner).
+- FR-6.4 A **Privacy & consent center** screen where the user can see, at any time: what is currently shared, who can see their profile, and toggle shareable fields.
+- FR-6.5 User can **delete their account and all associated data** from within the app.
+- FR-6.6 Location history is not retained beyond the active walk session in MVP.
+- FR-6.7 Each permission request (location, notifications, photos) is preceded by an in-app explanation of why it's needed and what it exposes.
+- FR-6.8 Notifications/alerts inform the user of meaningful exposure changes (e.g. "You are now visible on the map").
+
 ---
 
 ## 6. Non-functional requirements
@@ -260,6 +318,52 @@ Requirements:
 - Location data minimized: only lat/lng of an active walk is readable by others; no history retained beyond the active session in MVP.
 - Auth handled entirely by Supabase Auth (hashed passwords, session tokens managed by the platform).
 - Secrets (Supabase keys, Mapbox token) stored in Expo environment config, not committed to source control. Only the public anon key ships in the app; RLS is the real protection layer.
+- **Google sign-in** handled via Supabase's Google OAuth provider; the app never sees the user's Google password.
+- **In transit:** all traffic over HTTPS/TLS (Supabase default). **At rest:** managed encryption by Supabase.
+
+### 7.1 Privacy principles (must-follow rules)
+1. **Transparency** — the user always knows what is being shared and with whom (see FR-6.x). No hidden data collection.
+2. **Consent before exposure** — location/notification/photo permissions are explained in-app before the OS prompt; sharing on the map requires an explicit Start Walk.
+3. **Data minimization** — collect only what the feature needs; share only an active walk's location, never historical tracks (MVP).
+4. **User control** — the user can stop sharing instantly (End Walk), manage what's visible (Privacy center), and delete their account and data.
+5. **Visible status** — a persistent indicator shows whenever location is being shared.
+6. **Safety** — basic report/block tooling planned (F24) so users can flag bad actors.
+
+### 7.2 Compliance posture
+Design follows mainstream privacy regulation principles (GDPR-style: lawful basis, consent, right to access, right to deletion, data minimization). A user-facing **Privacy Policy** and **Terms of Service** are required before public launch. This is a design posture, not legal advice — review with a professional before release.
+
+---
+
+## 7.5 UI/UX, branding & interaction design
+
+### Visual source-of-truth
+The attached reference mockup is the **visual source-of-truth** for layout, colors, and screen flow:
+`https://dogwalkers-map.preview.emergentagent.com/`
+
+> Note: the mockup is a JavaScript app and could not be auto-captured into this document. To lock exact visual fidelity (colors, spacing, components), provide **screenshots** of each screen; the implementation will match them. Until then the UI follows the mockup's intent plus the principles below.
+
+### Branding — app name
+- Name: **כלב LOVE**, displayed with the Hebrew word **כלב** on the **right** and **LOVE** on the **left** (right-to-left composition: כלב ❤ LOVE).
+- The name, logo lockup, and a heart motif appear on the splash/launch screen and login screen.
+- App supports **Hebrew (RTL)** as a first-class layout direction. All screens must render correctly right-to-left; English text (e.g. "LOVE") sits inline within the RTL layout. (Full multi-language is Phase 2; correct RTL rendering is required from MVP because of the name and Hebrew UI.)
+
+### Core UX principles
+- **Map-first.** The live map is the home screen — the heart of the "Waze for dogs" experience.
+- **Intuitive & gesture-driven.** Natural mobile gestures throughout:
+  - Swipeable dog cards in matchmaking (Tinder-style swipe to pass / send playdate).
+  - Pinch-to-zoom and drag-to-pan on the map; tap a pin to open a dog card.
+  - Pull-to-refresh on lists; swipe-back navigation; bottom-sheet panels that drag up/down.
+- **Bottom tab navigation** for the main areas: Map · Matches · Chats · Profile (final structure to match the mockup).
+- **Minimal taps to value** — Start Walk and "see who's nearby" reachable in one tap from home.
+- **Clear sharing status** — the location-sharing banner (FR-6.3) is always visible while walking.
+
+### Performance requirements (NFR-8)
+- **60 fps target** for map pan/zoom, card swipes, and scrolling; no jank on mid-range Android devices.
+- Map markers efficiently rendered/clustered so many nearby dogs don't degrade frame rate.
+- Realtime updates throttled/debounced so live position and chat updates don't thrash the UI.
+- Images lazy-loaded and cached; profile photos resized to sensible dimensions before upload.
+- App cold-start to interactive map kept fast; heavy work deferred off the first render.
+- Gesture interactions handled on the native/UI thread (e.g. via the gesture/animation libraries standard to React Native) to keep them smooth.
 
 ---
 
@@ -269,13 +373,14 @@ Each slice is independently runnable and testable on a phone before proceeding.
 
 | # | Slice | Acceptance / QA focus |
 |---|---|---|
-| 0 | **Setup** — Expo app runs, Supabase project created, QR → blank app on phone | App launches on the QA owner's phone |
-| 1 | **Auth** — sign up, log in, log out | Account creation, wrong-password error, session persistence |
+| 0 | **Setup** — Expo app runs, Supabase project created, RTL + branding shell (כלב LOVE splash), QR → app on phone | App launches on the QA owner's phone; name renders RTL correctly |
+| 1 | **Auth** — Google sign-in, email sign-up, log in/out, first-run data-exposure notice | Google login, account creation, wrong-password error, session persistence, notice shown |
 | 2 | **Profiles** — owner + dog profiles, photo upload | Create/edit, validation, photo upload/replace |
 | 3 | **Map base** — Mapbox renders, user location, radius picker | Map loads, location shown, radius switches |
-| 4 | **Live walk** — Start/End walk, pin appears/disappears, nearby count | Two phones see each other; pin clears on End Walk |
-| 5 | **Matchmaking** — nearby dogs, request/accept/decline playdate | Full request lifecycle across two accounts |
+| 4 | **Live walk** — Start/End walk, pre-walk data-exposure notice, sharing banner, pin appears/disappears, nearby count | Two phones see each other; notice + banner shown; pin clears on End Walk |
+| 5 | **Matchmaking** — swipeable nearby dog cards, request/accept/decline playdate | Full request lifecycle across two accounts; swipe gestures feel smooth |
 | 6 | **Chat** — messaging after accepted playdate, real-time + push | Live send/receive, offline push notification |
+| 7 | **Privacy center** — view/manage what's shared, permission explanations, delete account & data | Toggle visibility, delete account removes data |
 
 **QA loop per slice:** code written → exact run commands provided → QA owner runs and tests on phone → defects reported → fixed → re-verified → next slice.
 
