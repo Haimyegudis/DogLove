@@ -10,7 +10,7 @@ const config: ExpoConfig = {
   android: {
     package: 'com.doglove.app',
   },
-  plugins: ['expo-router', 'expo-web-browser', '@react-native-community/datetimepicker', 'expo-font'],
+  plugins: ['expo-router', 'expo-web-browser', '@react-native-community/datetimepicker', 'expo-font', 'expo-image-picker'],
   extra: {
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
