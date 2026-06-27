@@ -14,3 +14,8 @@ test('exports a supabase client with auth', () => {
   expect(supabase).toBeDefined();
   expect(supabase.auth).toBeDefined();
 });
+
+afterAll(() => {
+  const { supabase } = require('../src/lib/supabase');
+  supabase.auth.stopAutoRefresh?.();
+});
