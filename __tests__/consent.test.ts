@@ -5,6 +5,10 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }));
 import { hasSeenDataNotice, setDataNoticeSeen } from '../src/state/consent';
 
+beforeEach(() => {
+  Object.keys(store).forEach(k => delete store[k]);
+});
+
 test('notice is unseen by default, seen after set', async () => {
   expect(await hasSeenDataNotice()).toBe(false);
   await setDataNoticeSeen();

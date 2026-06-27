@@ -46,3 +46,18 @@ test('getSession returns the session', async () => {
   const s = await auth.getSession();
   expect(s?.user.id).toBe('u1');
 });
+
+test('signOut calls supabase.auth.signOut', async () => {
+  mockAuth.signOut.mockResolvedValue(undefined);
+  await auth.signOut();
+  expect(mockAuth.signOut).toHaveBeenCalled();
+});
+
+test('onAuthStateChange subscribes and returns unsubscribe', () => {
+  const mockUnsubscribe = jest.fn();
+  mockAuth.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: mockUnsubscribe } } });
+  const result = auth.onAuthStateChange(() => {});
+  expect(result).toHaveProperty('unsubscribe');
+  result.unsubscribe();
+  expect(mockUnsubscribe).toHaveBeenCalled();
+});
