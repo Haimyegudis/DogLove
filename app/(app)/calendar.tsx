@@ -16,7 +16,7 @@ const statusLabel: Record<string, string> = { scheduled: 'מתוכנן', cancell
 
 export default function Calendar() {
   const [rows, setRows] = useState<PlaydateRow[]>([]);
-  const load = useCallback(() => { listMyPlaydates().then(({ data }) => setRows(data)); }, []);
+  const load = useCallback(() => { listMyPlaydates().then(({ data }) => setRows(data ?? [])).catch(console.error); }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   function onCancel(id: string) {
