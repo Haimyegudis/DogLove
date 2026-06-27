@@ -2,6 +2,10 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **STATUS: IMPLEMENTED & REVIEWED (2026-06-27).** All 11 tasks complete on branch `feat/plan-01-foundation-auth`, 18/18 tests green, final whole-branch review passed (merge-with-fixes; fixes applied). The 18+ age gate (spec v1.2) was folded into the sign-up screen as a client-side `isAdult` check.
+>
+> **CARRY-FORWARD to Plan 02 (Profiles) — known debt:** The age gate is currently **client-side only**. The spec (v1.2, FR-1.7) also requires **server-side enforcement**. The `profiles` table has no `date_of_birth`/`age`/`gender` columns yet, and the `handle_new_user` DB trigger creates a profile row for every new auth user regardless of age. Plan 02 must add: (1) a `date_of_birth` (and `age`/`gender`) column to `profiles`; (2) capture DOB into auth metadata at sign-up; (3) reject under-18 server-side (a `before insert` trigger or an Edge Function), so the gate can't be bypassed by a modified client or the Google-only path (which collects no DOB today).
+
 **Goal:** Stand up the כלב LOVE mobile app so it launches on a real phone with correct RTL branding, and a user can sign in with Google or email/password, see a first-run data-exposure notice, and land on a placeholder Home screen — with a `profiles` row created automatically.
 
 **Architecture:** React Native + Expo (managed, TypeScript) client talking directly to Supabase for auth, database, and (later) realtime/storage. This plan delivers Slices 0 (Setup) and 1 (Auth) from the spec. Auth logic lives in a thin, unit-tested service layer wrapping the Supabase client; screens are kept dumb and call the service. Session state drives a simple auth router (signed-out → auth stack; signed-in → app stack).

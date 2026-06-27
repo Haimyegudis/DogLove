@@ -1,0 +1,131 @@
+# Review package: 086e4b9..634a3ab
+
+## Commits
+634a3ab feat(auth): add auth context, RTL root layout, and routing
+
+## Files changed
+ __tests__/AuthContext.test.tsx | 21 +++++++++++++++++++++
+ app/_layout.tsx                | 14 +++++++++++++-
+ app/index.tsx                  | 23 +++++++++++++++++------
+ src/state/AuthContext.tsx      | 33 +++++++++++++++++++++++++++++++++
+ 4 files changed, 84 insertions(+), 7 deletions(-)
+
+## Diff
+diff --git a/__tests__/AuthContext.test.tsx b/__tests__/AuthContext.test.tsx
+new file mode 100644
+index 0000000..f980ca2
+--- /dev/null
++++ b/__tests__/AuthContext.test.tsx
+@@ -0,0 +1,21 @@
++import { render, waitFor } from '@testing-library/react-native';
++import { Text } from 'react-native';
++
++jest.mock('../src/services/auth', () => ({
++  getSession: jest.fn().mockResolvedValue({ user: { id: 'u1', app_metadata: { provider: 'email' } } }),
++  onAuthStateChange: jest.fn(() => ({ unsubscribe: jest.fn() })),
++  signOut: jest.fn(),
++}));
++jest.mock('../src/services/profile', () => ({ ensureProfile: jest.fn().mockResolvedValue({ error: null }) }));
++
++import { AuthProvider, useAuth } from '../src/state/AuthContext';
++
++function Probe() {
++  const { session, loading } = useAuth();
++  return <Text>{loading ? 'loading' : session ? 'in' : 'out'}</Text>;
++}
++
++test('loads session and exposes signed-in state', async () => {
++  const { getByText } = await render(<AuthProvider><Probe /></AuthProvider>);
++  await waitFor(() => expect(getByText('in')).toBeTruthy());
++});
+diff --git a/app/_layout.tsx b/app/_layout.tsx
+index cdf64d6..a56f622 100644
+--- a/app/_layout.tsx
++++ b/app/_layout.tsx
+@@ -1,4 +1,16 @@
++import { I18nManager } from 'react-native';
+ import { Stack } from 'expo-router';
++import { AuthProvider } from '../src/state/AuthContext';
++
++if (!I18nManager.isRTL) {
++  I18nManager.allowRTL(true);
++  I18nManager.forceRTL(true);
++}
++
+ export default function RootLayout() {
+-  return <Stack screenOptions={{ headerShown: false }} />;
++  return (
++    <AuthProvider>
++      <Stack screenOptions={{ headerShown: false }} />
++    </AuthProvider>
++  );
+ }
+diff --git a/app/index.tsx b/app/index.tsx
+index 9e33033..00fe08d 100644
+--- a/app/index.tsx
++++ b/app/index.tsx
+@@ -1,8 +1,19 @@
+-import { Text, View } from 'react-native';
++import { useEffect, useState } from 'react';
++import { Redirect } from 'expo-router';
++import { View, ActivityIndicator } from 'react-native';
++import { useAuth } from '../src/state/AuthContext';
++import { hasSeenDataNotice } from '../src/state/consent';
++
+ export default function Index() {
+-  return (
+-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+-      <Text>כלב LOVE</Text>
+-    </View>
+-  );
++  const { session, loading } = useAuth();
++  const [noticeSeen, setNoticeSeen] = useState<boolean | null>(null);
++
++  useEffect(() => { hasSeenDataNotice().then(setNoticeSeen); }, []);
++
++  if (loading || noticeSeen === null) {
++    return <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator /></View>;
++  }
++  if (!noticeSeen) return <Redirect href="/notice" />;
++  if (!session) return <Redirect href="/(auth)/login" />;
++  return <Redirect href="/(app)/home" />;
+ }
+diff --git a/src/state/AuthContext.tsx b/src/state/AuthContext.tsx
+new file mode 100644
+index 0000000..b9baa89
+--- /dev/null
++++ b/src/state/AuthContext.tsx
+@@ -0,0 +1,33 @@
++import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
++import type { Session } from '@supabase/supabase-js';
++import { getSession, onAuthStateChange, signOut as authSignOut } from '../services/auth';
++import { ensureProfile } from '../services/profile';
++
++type AuthValue = { session: Session | null; loading: boolean; signOut: () => Promise<void> };
++const AuthContext = createContext<AuthValue>({ session: null, loading: true, signOut: async () => {} });
++
++export function AuthProvider({ children }: { children: ReactNode }) {
++  const [session, setSession] = useState<Session | null>(null);
++  const [loading, setLoading] = useState(true);
++
++  useEffect(() => {
++    let active = true;
++    async function apply(s: Session | null) {
++      if (!active) return;
++      setSession(s);
++      if (s?.user) await ensureProfile(s.user.id, (s.user.app_metadata as any)?.provider);
++      setLoading(false);
++    }
++    getSession().then(apply);
++    const sub = onAuthStateChange(apply);
++    return () => { active = false; sub.unsubscribe(); };
++  }, []);
++
++  return (
++    <AuthContext.Provider value={{ session, loading, signOut: authSignOut }}>
++      {children}
++    </AuthContext.Provider>
++  );
++}
++
++export const useAuth = () => useContext(AuthContext);
