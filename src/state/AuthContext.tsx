@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import type { Session } from '@supabase/supabase-js';
 import { getSession, onAuthStateChange, signOut as authSignOut } from '../services/auth';
 import { ensureProfile } from '../services/profile';
+import { registerForPush } from '../services/push';
 
 type AuthValue = { session: Session | null; loading: boolean; signOut: () => Promise<void> };
 const AuthContext = createContext<AuthValue>({ session: null, loading: true, signOut: async () => {} });
@@ -15,7 +16,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function apply(s: Session | null) {
       if (!active) return;
       setSession(s);
-      if (s?.user) await ensureProfile(s.user.id, (s.user.app_metadata as any)?.provider);
+      if (s?.user) {
+        await ensureProfile(s.user.id, (s.user.app_metadata as any)?.provider);
+        registerForPush(s.user.id); // best-effort; no-ops in Expo Go
+      }
       setLoading(false);
     }
     getSession().then(apply);

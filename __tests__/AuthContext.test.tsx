@@ -7,6 +7,7 @@ jest.mock('../src/services/auth', () => ({
   signOut: jest.fn(),
 }));
 jest.mock('../src/services/profile', () => ({ ensureProfile: jest.fn().mockResolvedValue({ error: null }) }));
+jest.mock('../src/services/push', () => ({ registerForPush: jest.fn() }));
 
 import { AuthProvider, useAuth } from '../src/state/AuthContext';
 
