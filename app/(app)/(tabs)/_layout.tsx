@@ -18,6 +18,10 @@ export default function TabsLayout() {
         options={{ title: 'מפה', tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🗺️</Text> }}
       />
       <Tabs.Screen
+        name="playdates"
+        options={{ title: 'משחקים', tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>❤️</Text> }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{ title: 'פרופיל', tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🐶</Text> }}
       />
