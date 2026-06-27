@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import MapWebView from '../../../src/components/MapWebView';
 import { colors, shadow } from '../../../src/theme';
 import { requestLocationPermission, getCurrentCoords, watchCoords } from '../../../src/services/location';
@@ -49,6 +50,9 @@ export default function MapScreen() {
 
   useEffect(() => { if (coords) refreshNearby(coords, radiusM); }, [coords, radiusM, refreshNearby]);
 
+  // Refresh nearby dogs whenever the Map tab regains focus.
+  useFocusEffect(useCallback(() => { if (coords) refreshNearby(coords, radiusM); }, [coords, radiusM, refreshNearby]));
+
   useEffect(() => {
     const sub = subscribeActiveWalks(() => { if (coords) refreshNearby(coords, radiusM); });
     return () => { sub.unsubscribe(); };
@@ -76,6 +80,7 @@ export default function MapScreen() {
       if (error) { Alert.alert('שגיאה', error); return; }
       walkDogId.current = dogId;
       setWalking(true);
+      refreshNearby(c, radiusM); // show my dog on the map immediately, don't wait for realtime
       watcher.current = await watchCoords(async (nc) => {
         setCoords(nc);
         if (walkDogId.current) await updateWalkLocation(walkDogId.current, nc);
