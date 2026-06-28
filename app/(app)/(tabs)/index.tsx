@@ -9,13 +9,13 @@ import { listIncoming } from '../../../src/services/match';
 import { useI18n } from '../../../src/i18n/LanguageContext';
 import { colors, font, radius, gradients } from '../../../src/theme';
 
-function Stat({ n, label, tint, bg, icon }: { n: number; label: string; tint: string; bg: string; icon: string }) {
+function Stat({ n, label, tint, bg, icon, onPress }: { n: number; label: string; tint: string; bg: string; icon: string; onPress?: () => void }) {
   return (
-    <View style={styles.stat}>
+    <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [styles.stat, pressed && onPress && styles.pressed]}>
       <View style={[styles.statIcon, { backgroundColor: bg }]}><Text style={{ fontSize: 18 }}>{icon}</Text></View>
       <Text style={[styles.statN, { color: tint }]}>{n}</Text>
       <Text style={styles.statLabel}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -68,9 +68,9 @@ export default function Home() {
           </LinearGradient>
 
           <View style={styles.statsRow}>
-            <Stat n={walkers} label="מטיילים פעילים" tint={colors.green} bg={colors.greenSoft} icon="🐾" />
-            <Stat n={dogs} label="כלבים בקהילה" tint={colors.purple} bg={colors.purpleSoft} icon="🐕" />
-            <Stat n={pending} label="בקשות ממתינות" tint={colors.rose} bg={colors.roseSoft} icon="❤️" />
+            <Stat n={walkers} label="מטיילים פעילים" tint={colors.green} bg={colors.greenSoft} icon="🐾" onPress={() => router.push('/(app)/active-walkers')} />
+            <Stat n={dogs} label="כלבים בקהילה" tint={colors.purple} bg={colors.purpleSoft} icon="🐕" onPress={() => router.push('/(app)/browse')} />
+            <Stat n={pending} label="בקשות ממתינות" tint={colors.rose} bg={colors.roseSoft} icon="❤️" onPress={() => router.push('/(app)/(tabs)/playdates')} />
           </View>
 
           <Text style={styles.section}>{t('home.section')}</Text>

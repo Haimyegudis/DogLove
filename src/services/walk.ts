@@ -20,3 +20,19 @@ export async function nearbyDogs(c: Coords, radiusM: number) {
   const { data, error } = await supabase.rpc('nearby_active_dogs', { p_lat: c.lat, p_lng: c.lng, p_radius_m: radiusM });
   return { data: (data as NearbyDog[]) ?? [], error: error?.message ?? null };
 }
+
+export type ActiveWalker = {
+  dog_id: string;
+  name: string;
+  breed: string;
+  photo_url: string | null;
+  owner_id: string;
+  owner_name: string | null;
+  city: string | null;
+  started_at: string | null;
+};
+
+export async function listActiveWalkers() {
+  const { data, error } = await supabase.rpc('list_active_walkers');
+  return { data: (data as ActiveWalker[]) ?? [], error: error?.message ?? null };
+}

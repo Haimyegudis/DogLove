@@ -75,6 +75,7 @@ export default function AppLayout() {
       <Stack.Screen name="badges" options={{ title: 'ההישגים שלי' }} />
       <Stack.Screen name="places" options={{ title: 'שירותים בקרבת מקום' }} />
       <Stack.Screen name="premium" options={{ title: 'Premium' }} />
+      <Stack.Screen name="active-walkers" options={{ title: 'מטיילים פעילים' }} />
     </Stack>
     </>
   );
