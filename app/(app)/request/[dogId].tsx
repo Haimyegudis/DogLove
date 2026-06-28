@@ -8,6 +8,7 @@ import CompatibilityBadge from '../../../src/components/CompatibilityBadge';
 import VerifiedBadge from '../../../src/components/VerifiedBadge';
 import { useAuth } from '../../../src/state/AuthContext';
 import { browseDogs, sendPlaydateRequest } from '../../../src/services/match';
+import { blockUser, reportUser } from '../../../src/services/safety';
 import { listMyDogs } from '../../../src/services/dogs';
 import type { BrowseDog } from '../../../src/types/match';
 import type { Dog } from '../../../src/types/profile';
@@ -39,6 +40,30 @@ export default function RequestPlaydate() {
     router.back();
   }
 
+  function onSafety() {
+    if (!target) return;
+    Alert.alert('דיווח וחסימה', `${target.owner_name ?? 'המשתמש'}`, [
+      { text: 'ביטול', style: 'cancel' },
+      {
+        text: 'דווח על המשתמש',
+        onPress: async () => {
+          const { error } = await reportUser(userId, target.owner_id, 'דווח מתוך מסך בקשת משחק');
+          Alert.alert(error ? 'שגיאה' : 'תודה', error ?? 'הדיווח התקבל ויטופל.');
+        },
+      },
+      {
+        text: 'חסום משתמש',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await blockUser(userId, target.owner_id);
+          if (error) { Alert.alert('שגיאה', error); return; }
+          Alert.alert('נחסם', 'לא תראו עוד אחד את השני באפליקציה.');
+          router.back();
+        },
+      },
+    ]);
+  }
+
   return (
     <DogParkBackground>
       <SafeAreaView style={styles.safe}>
@@ -68,6 +93,12 @@ export default function RequestPlaydate() {
 
           {fromDog && target ? <CompatibilityBadge dogA={fromDog} dogB={dogId} /> : null}
 
+          {target ? (
+            <Pressable onPress={onSafety} style={styles.safetyBtn}>
+              <Text style={styles.safetyText}>דיווח / חסימה 🚫</Text>
+            </Pressable>
+          ) : null}
+
           <Pressable testID="send-request" disabled={busy} onPress={onSend}
             style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed]}>
             <Text style={styles.ctaText}>{busy ? 'שולח…' : 'בקשת משחק 🐾'}</Text>
@@ -95,4 +126,6 @@ const styles = StyleSheet.create({
   cta: { backgroundColor: colors.coral, borderRadius: radius.pill, paddingVertical: 16, alignItems: 'center', marginTop: 10 },
   ctaText: { fontFamily: font.black, color: colors.white, fontSize: 18 },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
+  safetyBtn: { alignSelf: 'center', paddingVertical: 10, marginTop: 4 },
+  safetyText: { fontFamily: font.medium, color: colors.inkSoft, fontSize: 14 },
 });
