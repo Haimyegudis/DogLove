@@ -7,11 +7,10 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  FlatList,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../../../src/state/AuthContext';
 import { listHealth, addHealth, deleteHealth } from '../../../src/services/health';
