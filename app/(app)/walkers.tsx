@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
-import { useAuth } from '../../src/state/AuthContext';
 import { colors, font, radius } from '../../src/theme';
 import { availableWalkers, startConversation } from '../../src/services/walkers';
 import Avatar from '../../src/components/Avatar';
@@ -9,7 +8,6 @@ import type { Walker } from '../../src/types/walker';
 
 export default function Walkers() {
   const router = useRouter();
-  const { session } = useAuth();
   const [city, setCity] = useState('');
   const [walkers, setWalkers] = useState<Walker[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,7 +26,7 @@ export default function Walkers() {
   useFocusEffect(
     useCallback(() => {
       load(city);
-    }, []),
+    }, [load]),
   );
 
   async function handleMessage(walker: Walker) {
