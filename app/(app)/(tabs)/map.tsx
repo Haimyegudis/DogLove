@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import MapWebView from '../../../src/components/MapWebView';
@@ -29,6 +30,12 @@ export default function MapScreen() {
 
   // The map view + nearby query center on the searched city if set, else GPS.
   const viewCenter = searchCenter ?? coords;
+
+  // Refs so realtime callback always reads fresh values without re-subscribing.
+  const viewCenterRef = useRef(viewCenter);
+  const radiusRef = useRef(radiusM);
+  viewCenterRef.current = viewCenter;
+  radiusRef.current = radiusM;
 
   async function onFocusMe() {
     // Clear any city search, recenter on me immediately, then refine GPS.
@@ -71,24 +78,17 @@ export default function MapScreen() {
   // Refresh nearby dogs whenever the Map tab regains focus.
   useFocusEffect(useCallback(() => { if (viewCenter) refreshNearby(viewCenter, radiusM); }, [viewCenter, radiusM, refreshNearby]));
 
+  // Subscribe ONCE on mount; refs supply fresh center/radius each callback.
   useEffect(() => {
-    const sub = subscribeActiveWalks(() => { if (viewCenter) refreshNearby(viewCenter, radiusM); });
+    const sub = subscribeActiveWalks(() => {
+      const c = viewCenterRef.current;
+      if (c) refreshNearby(c, radiusRef.current);
+    });
     return () => { sub.unsubscribe(); };
-  }, [viewCenter, radiusM, refreshNearby]);
+  }, [refreshNearby]);
 
-  async function onToggleWalk() {
-    if (toggling.current) return;
-    toggling.current = true;
+  async function actuallyStartWalk() {
     try {
-      if (walking) {
-        watcher.current?.remove();
-        watcher.current = null;
-        if (walkDogId.current) await endWalk(walkDogId.current);
-        walkDogId.current = null;
-        setWalking(false);
-        if (coords) refreshNearby(coords, radiusM);
-        return;
-      }
       const { data: myDogs } = await listMyDogs(userId);
       if (myDogs.length === 0) { Alert.alert('אין כלב', 'הוסף קודם פרופיל כלב כדי לצאת לטיול.'); return; }
       const c = coords ?? (await getCurrentCoords());
@@ -104,6 +104,48 @@ export default function MapScreen() {
         if (walkDogId.current) await updateWalkLocation(walkDogId.current, nc);
       });
     } finally {
+      toggling.current = false;
+    }
+  }
+
+  async function onToggleWalk() {
+    if (toggling.current) return;
+    toggling.current = true;
+    try {
+      if (walking) {
+        watcher.current?.remove();
+        watcher.current = null;
+        if (walkDogId.current) await endWalk(walkDogId.current);
+        walkDogId.current = null;
+        setWalking(false);
+        if (coords) refreshNearby(coords, radiusM);
+        return;
+      }
+      // FR-6.2: one-time consent gate before first walk.
+      const consentGiven = await AsyncStorage.getItem('doglove.walkConsent.v1');
+      if (!consentGiven) {
+        toggling.current = false; // don't leave toggling stuck while alert is shown
+        Alert.alert(
+          'שיתוף מיקום',
+          'בזמן הליכה, משתמשים קרובים יראו את מיקום הכלב שלך. ברגע שתסיים — זה נפסק.',
+          [
+            { text: 'ביטול', style: 'cancel' },
+            {
+              text: 'הבנתי, התחל',
+              onPress: async () => {
+                await AsyncStorage.setItem('doglove.walkConsent.v1', 'true');
+                toggling.current = true;
+                await actuallyStartWalk();
+              },
+            },
+          ],
+        );
+        return;
+      }
+      await actuallyStartWalk();
+    } finally {
+      // actuallyStartWalk resets toggling.current itself; only reset here for
+      // the early-return paths above (stop-walk branch and consent gate return).
       toggling.current = false;
     }
   }

@@ -36,7 +36,7 @@ const HTML = `<!DOCTYPE html><html><head>
     drawCircle();
   });
 
-  var dogMarkers=[]; var meMarker=null; var centered=false; var lastCenter=null; var lastRadius=0;
+  var dogMarkers={}; var meMarker=null; var centered=false; var lastCenter=null; var lastRadius=0;
 
   // Recenter the map on the user (triggered by the focus button).
   window.recenter = function(){ if(lastCenter){ map.flyTo({center:[lastCenter.lng,lastCenter.lat], zoom:15, duration:600}); } };
@@ -87,11 +87,13 @@ const HTML = `<!DOCTYPE html><html><head>
         if(!centered){ map.jumpTo({center:[c.lng,c.lat], zoom:14}); centered=true; }
       }
       drawCircle();
-      dogMarkers.forEach(function(m){m.remove();}); dogMarkers=[];
+      var seen = {};
       dogs.forEach(function(x){
-        var m=new maplibregl.Marker({element:dogEl(x)}).setLngLat([x.lng,x.lat]).addTo(map);
-        dogMarkers.push(m);
+        seen[x.dog_id] = true;
+        if(dogMarkers[x.dog_id]){ dogMarkers[x.dog_id].setLngLat([x.lng,x.lat]); }
+        else { dogMarkers[x.dog_id] = new maplibregl.Marker({element:dogEl(x)}).setLngLat([x.lng,x.lat]).addTo(map); }
       });
+      Object.keys(dogMarkers).forEach(function(id){ if(!seen[id]){ dogMarkers[id].remove(); delete dogMarkers[id]; } });
     }catch(e){}
   };
   document.addEventListener('message', function(ev){ window.setData(ev.data); });
