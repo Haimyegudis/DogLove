@@ -1,15 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { colors, font, radius, shadow } from '../../src/theme';
 import { getCurrentCoords } from '../../src/services/location';
 import { nearbyPlaces, type Place, type PlaceKind } from '../../src/services/places';
@@ -58,11 +57,14 @@ interface PlaceCardProps {
 }
 
 function PlaceCard({ place, userLat, userLng, kindConfig }: PlaceCardProps) {
+  const router = useRouter();
   const distKm = haversineKm(userLat, userLng, place.lat, place.lng);
 
   const handlePress = () => {
-    const url = `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=18/${place.lat}/${place.lng}`;
-    Linking.openURL(url);
+    router.push({
+      pathname: '/(app)/place/[id]',
+      params: { id: String(place.id), kind: place.kind, name: place.name, lat: String(place.lat), lng: String(place.lng) },
+    });
   };
 
   return (
@@ -74,6 +76,7 @@ function PlaceCard({ place, userLat, userLng, kindConfig }: PlaceCardProps) {
         <Text style={styles.placeName}>{place.name}</Text>
         <Text style={[styles.placeDistance, { color: kindConfig.color }]}>
           {formatDistance(distKm)} ממך
+          {place.ratingCount ? `  ·  ⭐ ${place.avgStars} (${place.ratingCount})` : '  ·  אין דירוג'}
         </Text>
       </View>
       <Text style={styles.cardArrow}>‹</Text>
@@ -85,6 +88,7 @@ function PlaceCard({ place, userLat, userLng, kindConfig }: PlaceCardProps) {
 export default function PlacesScreen() {
   const [activeKind, setActiveKind] = useState<PlaceKind>('vet');
   const [radiusKm, setRadiusKm] = useState(10);
+  const [sortBy, setSortBy] = useState<'distance' | 'rating'>('distance');
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +96,18 @@ export default function PlacesScreen() {
   const [userLng, setUserLng] = useState<number | null>(null);
 
   const kindConfig = KINDS.find((k) => k.kind === activeKind) ?? KINDS[0];
+
+  const sortedPlaces = useMemo(() => {
+    if (userLat == null || userLng == null) return places;
+    const arr = [...places];
+    if (sortBy === 'rating') {
+      arr.sort((a, b) => (b.avgStars ?? 0) - (a.avgStars ?? 0) || (b.ratingCount ?? 0) - (a.ratingCount ?? 0));
+    } else {
+      arr.sort((a, b) =>
+        haversineKm(userLat, userLng, a.lat, a.lng) - haversineKm(userLat, userLng, b.lat, b.lng));
+    }
+    return arr;
+  }, [places, sortBy, userLat, userLng]);
 
   const load = useCallback(
     async (kind: PlaceKind, km: number) => {
@@ -194,6 +210,17 @@ export default function PlacesScreen() {
         })}
       </View>
 
+      {/* Sort toggle */}
+      <View style={styles.radiusRow}>
+        <Text style={styles.radiusLabel}>מיון:</Text>
+        <Pressable onPress={() => setSortBy('distance')} style={[styles.radiusChip, sortBy === 'distance' && { backgroundColor: kindConfig.color, borderColor: kindConfig.color }]}>
+          <Text style={[styles.radiusChipText, sortBy === 'distance' && { color: colors.white }]}>מרחק</Text>
+        </Pressable>
+        <Pressable onPress={() => setSortBy('rating')} style={[styles.radiusChip, sortBy === 'rating' && { backgroundColor: kindConfig.color, borderColor: kindConfig.color }]}>
+          <Text style={[styles.radiusChipText, sortBy === 'rating' && { color: colors.white }]}>דירוג ⭐</Text>
+        </Pressable>
+      </View>
+
       {/* Content */}
       {loading ? (
         <View style={styles.center}>
@@ -209,7 +236,7 @@ export default function PlacesScreen() {
         </View>
       ) : (
         <FlatList
-          data={places}
+          data={sortedPlaces}
           keyExtractor={(item) => `${item.id}`}
           renderItem={({ item }) =>
             userLat !== null && userLng !== null ? (

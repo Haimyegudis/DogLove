@@ -76,6 +76,7 @@ export default function AppLayout() {
       <Stack.Screen name="places" options={{ title: 'שירותים בקרבת מקום' }} />
       <Stack.Screen name="premium" options={{ title: 'Premium' }} />
       <Stack.Screen name="active-walkers" options={{ title: 'מטיילים פעילים' }} />
+      <Stack.Screen name="place/[id]" options={{ title: 'מקום' }} />
     </Stack>
     </>
   );
