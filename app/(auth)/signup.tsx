@@ -35,6 +35,7 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [dob, setDob] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function onPickerChange(event: DateTimePickerEvent, selected?: Date) {
@@ -57,12 +58,19 @@ export default function Signup() {
       Alert.alert('הרשמה נכשלה', 'עליך להיות בן 18 ומעלה כדי להירשם');
       return;
     }
+    if (!agreed) {
+      Alert.alert('צריך לאשר', 'יש לאשר את תנאי השימוש: גיל 18+ ושימוש במיקום ובתמונות.');
+      return;
+    }
 
     setBusy(true);
     const { error } = await signUpWithEmail(email.trim(), password);
     setBusy(false);
     if (error) { Alert.alert('הרשמה נכשלה', error); return; }
-    Alert.alert('ברוך הבא לעדר! 🐾', 'החשבון נוצר. עכשיו אפשר להתחבר.');
+    Alert.alert(
+      'כמעט שם! 📧',
+      'שלחנו לך מייל אימות. אשר/י את הקישור במייל ואז אפשר להתחבר.',
+    );
     router.replace('/(auth)/login');
   }
 
@@ -137,10 +145,19 @@ export default function Signup() {
                 </View>
               )}
 
+              <Pressable style={styles.consentRow} onPress={() => setAgreed((v) => !v)}>
+                <View style={[styles.checkbox, agreed && styles.checkboxOn]}>
+                  {agreed ? <Text style={styles.checkmark}>✓</Text> : null}
+                </View>
+                <Text style={styles.consentText}>
+                  אני מאשר/ת שאני בן/בת 18 ומעלה, ומסכים/ה שהאפליקציה תשתמש במיקום (GPS), בתמונות ובנתונים שאשתף — לצורך מציאת כלבים, מטיילים ושירותים בקרבתי.
+                </Text>
+              </Pressable>
+
               <Pressable
                 testID="signup-btn"
                 disabled={busy}
-                style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed, busy && styles.ctaBusy]}
+                style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed, (busy || !agreed) && styles.ctaBusy]}
                 onPress={onSignup}
               >
                 <Text style={styles.ctaText}>{busy ? 'רגע…' : 'הצטרפות 🐾'}</Text>
@@ -202,6 +219,12 @@ const styles = StyleSheet.create({
 
   doneBtn: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 28, marginTop: 4 },
   doneText: { fontFamily: font.bold, color: colors.coralDeep, fontSize: 16 },
+
+  consentRow: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 10, marginTop: 12 },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: colors.coral, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  checkboxOn: { backgroundColor: colors.coral },
+  checkmark: { color: colors.white, fontSize: 15, fontFamily: font.bold },
+  consentText: { flex: 1, fontFamily: font.regular, fontSize: 12, color: colors.caramel, textAlign: 'right', lineHeight: 17 },
 
   cta: {
     backgroundColor: colors.coral,
