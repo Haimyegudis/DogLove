@@ -44,6 +44,11 @@ export async function signInWithGoogle() {
   return { error: exchangeError?.message ?? null };
 }
 
+export async function sendPasswordReset(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+  return { error: error?.message ?? null };
+}
+
 export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }

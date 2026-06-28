@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import Avatar from '../../../src/components/Avatar';
@@ -13,7 +13,7 @@ export default function Messages() {
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    listConversations().then(({ data }) => { if (active) setRows(data); });
+    listConversations().then(({ data, error }) => { if (!active) return; if (error) { Alert.alert('שגיאה', error); return; } setRows(data); });
     return () => { active = false; };
   }, []));
 

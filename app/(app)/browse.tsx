@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Text, StyleSheet, ScrollView } from 'react-native';
+import { Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DogParkBackground from '../../src/components/DogParkBackground';
@@ -12,7 +12,12 @@ export default function Browse() {
   const router = useRouter();
   const [dogs, setDogs] = useState<BrowseDog[]>([]);
 
-  useEffect(() => { browseDogs(50).then(({ data }) => setDogs(data)); }, []);
+  useEffect(() => {
+    browseDogs(50).then(({ data, error }) => {
+      if (error) { Alert.alert('שגיאה', error); return; }
+      setDogs(data);
+    });
+  }, []);
 
   return (
     <DogParkBackground>

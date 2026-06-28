@@ -16,8 +16,8 @@ export default function Playdates() {
   const [outgoing, setOutgoing] = useState<PlaydateRequestRow[]>([]);
 
   const load = useCallback(() => {
-    listIncoming().then(({ data }) => setIncoming(data));
-    listOutgoing().then(({ data }) => setOutgoing(data));
+    listIncoming().then(({ data, error }) => { if (error) { Alert.alert('שגיאה', error); return; } setIncoming(data); });
+    listOutgoing().then(({ data, error }) => { if (error) { Alert.alert('שגיאה', error); return; } setOutgoing(data); });
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

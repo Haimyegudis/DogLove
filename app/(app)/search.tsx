@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DogCard from '../../src/components/DogCard';
@@ -25,8 +25,15 @@ export default function Search() {
   const [users, setUsers] = useState<UserResult[]>([]);
 
   async function run() {
-    if (mode === 'dogs') setDogs((await searchDogs(q, city)).data);
-    else setUsers((await searchUsers(gender, 18, 120, city)).data);
+    if (mode === 'dogs') {
+      const { data, error } = await searchDogs(q, city);
+      if (error) { Alert.alert('שגיאה', error); return; }
+      setDogs(data);
+    } else {
+      const { data, error } = await searchUsers(gender, 18, 120, city);
+      if (error) { Alert.alert('שגיאה', error); return; }
+      setUsers(data);
+    }
   }
 
   return (

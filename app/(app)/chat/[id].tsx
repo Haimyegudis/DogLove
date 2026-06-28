@@ -20,15 +20,22 @@ export default function Chat() {
   const [showDate, setShowDate] = useState(false);
   const [pickedDate, setPickedDate] = useState<Date | null>(null);
 
-  async function confirmSchedule(d: Date) {
-    setShowDate(false);
+  async function finishSchedule(d: Date, place: string) {
     const { data: otherId, error: e1 } = await otherInConversation(id);
     if (e1) { Alert.alert('שגיאה', e1); return; }
     if (!otherId) { Alert.alert('שגיאה', 'לא נמצא משתתף'); return; }
-    const place = '';
     const { error } = await schedulePlaydate(userId, otherId, d.toISOString(), place);
     if (error) { Alert.alert('שגיאה', error); return; }
     Alert.alert('נקבע! 📅', 'המפגש נוסף ליומן.');
+  }
+
+  function confirmSchedule(d: Date) {
+    setShowDate(false);
+    if (Platform.OS === 'ios') {
+      (Alert as any).prompt('מקום המפגש', 'איפה נפגשים?', (place?: string) => finishSchedule(d, place || ''));
+    } else {
+      finishSchedule(d, '');
+    }
   }
   const listRef = useRef<FlatList<Message>>(null);
   const headerTitle = name ?? 'שיחה';

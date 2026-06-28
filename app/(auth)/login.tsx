@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import BrandLockup from '../../src/components/BrandLockup';
 import DogParkBackground from '../../src/components/DogParkBackground';
-import { signInWithEmail, signInWithGoogle } from '../../src/services/auth';
+import { signInWithEmail, signInWithGoogle, sendPasswordReset } from '../../src/services/auth';
 import { colors, font, radius, shadow } from '../../src/theme';
 
 export default function Login() {
@@ -120,6 +120,20 @@ export default function Login() {
                 onPress={onEmailLogin}
               >
                 <Text style={styles.ctaText}>{busy ? 'רגע…' : 'בוא נצא לטיול 🦮'}</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={async () => {
+                  if (!email.trim()) {
+                    Alert.alert('הזן אימייל', 'מלא/י את כתובת האימייל קודם');
+                    return;
+                  }
+                  await sendPasswordReset(email);
+                  Alert.alert('נשלח', 'אם הכתובת קיימת, נשלח קישור לאיפוס סיסמה.');
+                }}
+                style={styles.forgotWrap}
+              >
+                <Text style={styles.forgot}>שכחת סיסמה?</Text>
               </Pressable>
             </Animated.View>
 
@@ -228,6 +242,9 @@ const styles = StyleSheet.create({
   ctaText: { fontFamily: font.black, color: colors.white, fontSize: 18 },
 
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
+
+  forgotWrap: { alignItems: 'center', marginTop: 2 },
+  forgot: { fontFamily: font.medium, color: colors.rose, fontSize: 14 },
 
   linkWrap: { alignItems: 'center' },
   link: { fontFamily: font.medium, color: colors.caramel, fontSize: 15 },
