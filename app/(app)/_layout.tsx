@@ -43,6 +43,10 @@ export default function AppLayout() {
       <Stack.Screen name="social-walks" options={{ title: 'טיולים קבוצתיים' }} />
       <Stack.Screen name="new-social-walk" options={{ title: 'טיול קבוצתי חדש' }} />
       <Stack.Screen name="walkers" options={{ title: 'מטיילי כלבים' }} />
+      <Stack.Screen name="challenges" options={{ title: 'אתגרי כושר' }} />
+      <Stack.Screen name="badges" options={{ title: 'ההישגים שלי' }} />
+      <Stack.Screen name="places" options={{ title: 'שירותים בקרבת מקום' }} />
+      <Stack.Screen name="premium" options={{ title: 'Premium' }} />
     </Stack>
   );
 }

@@ -82,6 +82,10 @@ export default function Home() {
             <Feature title="טיולים קבוצתיים" sub="להיפגש בפארק" bg={colors.greenSoft} icon="👥" onPress={() => router.push('/(app)/social-walks')} />
             <Feature title="מטיילי כלבים" sub="מי יוציא את הכלב" bg={colors.greenSoft} icon="🦮" onPress={() => router.push('/(app)/walkers')} />
             <Feature title="הסטטיסטיקה שלי" sub="טיולים ורצף" bg={colors.purpleSoft} icon="📊" onPress={() => router.push('/(app)/walk-stats')} />
+            <Feature title="אתגרי כושר" sub="התחרו בקהילה" bg={colors.greenSoft} icon="🏆" onPress={() => router.push('/(app)/challenges')} />
+            <Feature title="ההישגים שלי" sub="תגים ומדליות" bg={colors.roseSoft} icon="🏅" onPress={() => router.push('/(app)/badges')} />
+            <Feature title="שירותים קרובים" sub="וטרינר, גינות" bg={colors.purpleSoft} icon="🏥" onPress={() => router.push('/(app)/places')} />
+            <Feature title="Premium" sub="שדרג את החוויה" bg={colors.roseSoft} icon="⭐" onPress={() => router.push('/(app)/premium')} />
           </View>
         </ScrollView>
       </SafeAreaView>

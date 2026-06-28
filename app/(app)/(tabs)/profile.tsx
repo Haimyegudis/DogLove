@@ -5,8 +5,11 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import DogParkBackground from '../../../src/components/DogParkBackground';
 import BrandLockup from '../../../src/components/BrandLockup';
 import Avatar from '../../../src/components/Avatar';
+import VerifiedBadge from '../../../src/components/VerifiedBadge';
+import { PremiumBadge } from '../../../src/components/PremiumBadge';
 import { useAuth } from '../../../src/state/AuthContext';
 import { getMyProfile } from '../../../src/services/profile';
+import { amIPremium } from '../../../src/services/premium';
 import { listMyDogs } from '../../../src/services/dogs';
 import { ageFromISO } from '../../../src/lib/age';
 import { OwnerProfile, Dog, GENDER_OPTIONS } from '../../../src/types/profile';
@@ -20,12 +23,14 @@ export default function Home() {
   const userId = session!.user.id;
   const [profile, setProfile] = useState<OwnerProfile | null>(null);
   const [dogs, setDogs] = useState<Dog[]>([]);
+  const [premium, setPremium] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       getMyProfile(userId).then(({ data }) => active && setProfile(data));
       listMyDogs(userId).then(({ data }) => active && setDogs(data));
+      amIPremium().then(({ data }) => active && setPremium(!!data));
       return () => { active = false; };
     }, [userId]),
   );
@@ -64,6 +69,14 @@ export default function Home() {
                 </Text>
               </View>
               <Text style={styles.edit}>עריכה ✏️</Text>
+            </Pressable>
+          )}
+
+          {!incomplete && (
+            <Pressable onPress={() => router.push('/(app)/premium')} style={styles.badgeRow}>
+              <VerifiedBadge userId={userId} />
+              <PremiumBadge premium={premium} />
+              {!premium ? <Text style={styles.upgradeHint}>שדרג ל-Premium ⭐</Text> : null}
             </Pressable>
           )}
 
@@ -113,6 +126,8 @@ const styles = StyleSheet.create({
   ownerName: { fontFamily: font.bold, fontSize: 18, color: colors.bark, textAlign: 'right' },
   ownerMeta: { fontFamily: font.regular, fontSize: 14, color: colors.caramel, textAlign: 'right' },
   edit: { fontFamily: font.medium, color: colors.coralDeep, fontSize: 13 },
+  badgeRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  upgradeHint: { fontFamily: font.medium, color: colors.purple, fontSize: 13 },
 
   dogsHeader: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
   dogsTitle: { fontFamily: font.black, fontSize: 18, color: colors.bark },

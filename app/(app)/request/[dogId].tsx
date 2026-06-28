@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DogParkBackground from '../../../src/components/DogParkBackground';
 import Avatar from '../../../src/components/Avatar';
+import CompatibilityBadge from '../../../src/components/CompatibilityBadge';
+import VerifiedBadge from '../../../src/components/VerifiedBadge';
 import { useAuth } from '../../../src/state/AuthContext';
 import { browseDogs, sendPlaydateRequest } from '../../../src/services/match';
 import { listMyDogs } from '../../../src/services/dogs';
@@ -46,7 +48,12 @@ export default function RequestPlaydate() {
               <Avatar uri={target.photo_url} fallback="🐶" size={110} />
               <Text style={styles.name}>{target.name}</Text>
               <Text style={styles.meta}>{target.breed} · {target.age} שנים</Text>
-              {target.owner_name ? <Text style={styles.owner}>הבעלים: {target.owner_name}</Text> : null}
+              {target.owner_name ? (
+                <View style={styles.ownerRow}>
+                  <Text style={styles.owner}>הבעלים: {target.owner_name}</Text>
+                  <VerifiedBadge userId={target.owner_id} />
+                </View>
+              ) : null}
             </View>
           )}
 
@@ -58,6 +65,8 @@ export default function RequestPlaydate() {
               </Pressable>
             ))}
           </View>
+
+          {fromDog && target ? <CompatibilityBadge dogA={fromDog} dogB={dogId} /> : null}
 
           <Pressable testID="send-request" disabled={busy} onPress={onSend}
             style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed]}>
@@ -75,6 +84,7 @@ const styles = StyleSheet.create({
   targetCard: { alignItems: 'center', gap: 6, backgroundColor: colors.white, borderRadius: radius.lg, padding: 22, borderWidth: 1, borderColor: colors.line },
   name: { fontFamily: font.black, fontSize: 24, color: colors.bark },
   meta: { fontFamily: font.medium, fontSize: 15, color: colors.caramel },
+  ownerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
   owner: { fontFamily: font.regular, fontSize: 14, color: colors.inkSoft },
   section: { fontFamily: font.bold, fontSize: 16, color: colors.bark, textAlign: 'right', marginTop: 6 },
   chips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
