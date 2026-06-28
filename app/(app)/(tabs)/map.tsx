@@ -2,13 +2,14 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import MapWebView from '../../../src/components/MapWebView';
 import { colors, font, shadow } from '../../../src/theme';
 import { requestLocationPermission, getCurrentCoords, getLastKnownCoords, watchCoords } from '../../../src/services/location';
 import { geocodeCity } from '../../../src/services/geocode';
 import { startWalk, endWalk, updateWalkLocation, nearbyDogs } from '../../../src/services/walk';
 import { subscribeActiveWalks } from '../../../src/services/walkRealtime';
+import { amIPremium } from '../../../src/services/premium';
 import { listMyDogs } from '../../../src/services/dogs';
 import { useAuth } from '../../../src/state/AuthContext';
 import WalkControls from '../../../src/components/WalkControls';
@@ -24,7 +25,9 @@ function haversine(a: Coords, b: Coords): number {
 
 export default function MapScreen() {
   const { session } = useAuth();
+  const router = useRouter();
   const userId = session!.user.id;
+  const [premium, setPremium] = useState(false);
   const [coords, setCoords] = useState<Coords | null>(null);
   const [radiusM, setRadiusM] = useState(3000);
   const [dogs, setDogs] = useState<NearbyDog[]>([]);
@@ -56,6 +59,18 @@ export default function MapScreen() {
   }
 
   async function onSearchCity() {
+    // Browsing other areas/cities is a Premium perk; free users stay local.
+    if (!premium) {
+      Alert.alert(
+        'תכונת Premium ⭐',
+        'חיפוש כלבים בערים ואזורים אחרים זמין למשתמשי Premium. לשדרג?',
+        [
+          { text: 'לא עכשיו', style: 'cancel' },
+          { text: 'שדרג', onPress: () => router.push('/(app)/premium') },
+        ],
+      );
+      return;
+    }
     const c = await geocodeCity(cityQ);
     if (!c) { Alert.alert('לא נמצא', 'לא מצאנו את המקום הזה.'); return; }
     setSearchCenter(c);
@@ -87,6 +102,13 @@ export default function MapScreen() {
 
   // Refresh nearby dogs whenever the Map tab regains focus.
   useFocusEffect(useCallback(() => { if (viewCenter) refreshNearby(viewCenter, radiusM); }, [viewCenter, radiusM, refreshNearby]));
+
+  // Keep premium status fresh so the city-search gate reflects upgrades.
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    amIPremium().then(({ data }) => { if (active) setPremium(!!data); });
+    return () => { active = false; };
+  }, []));
 
   // Subscribe ONCE on mount; refs supply fresh center/radius each callback.
   useEffect(() => {

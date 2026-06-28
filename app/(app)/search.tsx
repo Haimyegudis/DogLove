@@ -30,7 +30,7 @@ export default function Search() {
       if (error) { Alert.alert('שגיאה', error); return; }
       setDogs(data);
     } else {
-      const { data, error } = await searchUsers(gender, 18, 120, city);
+      const { data, error } = await searchUsers(q, gender, 18, 120, city);
       if (error) { Alert.alert('שגיאה', error); return; }
       setUsers(data);
     }
@@ -51,10 +51,12 @@ export default function Search() {
             </Pressable>
           </View>
 
-          {mode === 'dogs' ? (
-            <TextInput style={styles.input} placeholder="סוג/גזע או שם" placeholderTextColor={colors.inkCoolSoft}
-              value={q} onChangeText={setQ} onSubmitEditing={run} returnKeyType="search" />
-          ) : (
+          <TextInput style={styles.input}
+            placeholder={mode === 'dogs' ? 'סוג/גזע, שם כלב או שם בעלים' : 'שם בעל/ת הכלב'}
+            placeholderTextColor={colors.inkCoolSoft}
+            value={q} onChangeText={setQ} onSubmitEditing={run} returnKeyType="search" />
+
+          {mode === 'users' && (
             <View style={styles.chips}>
               {GENDERS.map((g) => (
                 <Pressable key={g.label} onPress={() => setGender(g.v)} style={[styles.chip, gender === g.v && styles.chipOn]}>
