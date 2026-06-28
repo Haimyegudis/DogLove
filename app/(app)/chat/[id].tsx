@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../../src/state/AuthContext';
 import { listMessages, sendMessage, subscribeMessages } from '../../../src/services/chat';
 import type { Message } from '../../../src/types/chat';
+import { blockUser, reportUser } from '../../../src/services/safety';
 import { colors, font, radius } from '../../../src/theme';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { otherInConversation, schedulePlaydate } from '../../../src/services/playdates';
@@ -38,6 +39,52 @@ export default function Chat() {
     return () => { sub.unsubscribe(); };
   }, [id]);
 
+  async function openMenu() {
+    Alert.alert('אפשרויות', undefined, [
+      {
+        text: 'חסום משתמש',
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert('חסום משתמש', 'האם לחסום משתמש זה?', [
+            { text: 'ביטול', style: 'cancel' },
+            {
+              text: 'חסום',
+              style: 'destructive',
+              onPress: async () => {
+                const { data: otherId, error: e1 } = await otherInConversation(id);
+                if (e1) { Alert.alert('שגיאה', e1); return; }
+                if (!otherId) { Alert.alert('שגיאה', 'לא נמצא משתתף'); return; }
+                const { error } = await blockUser(userId, otherId);
+                if (error) { Alert.alert('שגיאה', error); return; }
+                router.back();
+              },
+            },
+          ]);
+        },
+      },
+      {
+        text: 'דווח',
+        onPress: async () => {
+          const { data: otherId, error: e1 } = await otherInConversation(id);
+          if (e1) { Alert.alert('שגיאה', e1); return; }
+          if (!otherId) { Alert.alert('שגיאה', 'לא נמצא משתתף'); return; }
+          if ((Alert as any).prompt) {
+            (Alert as any).prompt('דווח על משתמש', 'סיבה (אופציונלי):', async (reason: string) => {
+              const { error } = await reportUser(userId, otherId, reason ?? '');
+              if (error) { Alert.alert('שגיאה', error); return; }
+              Alert.alert('תודה, הדיווח התקבל');
+            });
+          } else {
+            const { error } = await reportUser(userId, otherId, '');
+            if (error) { Alert.alert('שגיאה', error); return; }
+            Alert.alert('תודה, הדיווח התקבל');
+          }
+        },
+      },
+      { text: 'ביטול', style: 'cancel' },
+    ]);
+  }
+
   async function onSend() {
     const body = text.trim();
     if (!body) return;
@@ -56,6 +103,9 @@ export default function Chat() {
           <Text style={styles.headerTitle}>{headerTitle}</Text>
           <Pressable onPress={() => { setPickedDate(new Date(Date.now() + 3600_000)); setShowDate(true); }} style={styles.scheduleButton}>
             <Text style={styles.scheduleText}>קבע מפגש 📅</Text>
+          </Pressable>
+          <Pressable onPress={openMenu} style={styles.menuButton}>
+            <Text style={styles.menuText}>⋯</Text>
           </Pressable>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backText}>‹</Text>
@@ -134,6 +184,8 @@ const styles = StyleSheet.create({
   backText: { fontSize: 28, color: colors.brandDark, lineHeight: 32 },
   scheduleButton: { paddingHorizontal: 10, paddingVertical: 6 },
   scheduleText: { fontFamily: font.regular, fontSize: 13, color: colors.brandDark },
+  menuButton: { paddingHorizontal: 10, paddingVertical: 6 },
+  menuText: { fontFamily: font.regular, fontSize: 18, color: colors.rose },
   flex: { flex: 1 },
   list: { padding: 14, gap: 8 },
   bubbleWrap: { flexDirection: 'row' },

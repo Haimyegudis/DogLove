@@ -56,6 +56,7 @@ export default function Privacy() {
           <View style={styles.card}>
             {SHARED.map((s, i) => <Text key={i} style={styles.sharedItem}>{s}</Text>)}
           </View>
+          <Text style={styles.blockNote}>משתמשים שחסמת לא יראו אותך ולא יופיעו עבורך.</Text>
 
           <Pressable onPress={onDelete} style={styles.deleteBtn}>
             <Text style={styles.deleteText}>מחיקת חשבון וכל הנתונים</Text>
@@ -80,4 +81,5 @@ const styles = StyleSheet.create({
   sharedItem: { fontFamily: font.regular, fontSize: 14, lineHeight: 22, color: colors.inkCool, textAlign: 'right', writingDirection: 'rtl' },
   deleteBtn: { backgroundColor: '#FDECEC', borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: '#F3C9C9' },
   deleteText: { fontFamily: font.bold, color: colors.danger, fontSize: 15 },
+  blockNote: { fontFamily: font.regular, fontSize: 12, color: colors.inkCoolSoft, textAlign: 'right', writingDirection: 'rtl' },
 });
