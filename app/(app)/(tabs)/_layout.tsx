@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { listIncoming } from '../../../src/services/match';
 import { useI18n } from '../../../src/i18n/LanguageContext';
 import { colors, font } from '../../../src/theme';
 
 export default function TabsLayout() {
   const { t } = useI18n();
+  // Grow the tab bar by the bottom safe-area inset so it clears Android
+  // 3-button navigation (inset ~48px) instead of sitting under the buttons.
+  const insets = useSafeAreaInsets();
   // In-app notification badge: number of pending incoming playdate requests.
   const [pending, setPending] = useState(0);
 
@@ -26,7 +30,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.rose,
         tabBarInactiveTintColor: colors.inkCoolSoft,
-        tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.lineCool, height: 62, paddingBottom: 8, paddingTop: 6 },
+        tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.lineCool, height: 62 + insets.bottom, paddingBottom: 8 + insets.bottom, paddingTop: 6 },
         tabBarLabelStyle: { fontFamily: font.medium, fontSize: 11 },
       }}
     >
