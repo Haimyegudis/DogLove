@@ -78,6 +78,10 @@ export default function Home() {
             <Feature title="חיפוש" sub="כלבים לפי סוג, בעלים" bg={colors.purpleSoft} icon="🔎" onPress={() => router.push('/(app)/search')} />
             <Feature title="יומן" sub="מפגשים מתוכננים" bg={colors.purpleSoft} icon="📅" onPress={() => router.push('/(app)/calendar')} />
             <Feature title="גלריה" sub="תמונות של כלבים" bg={colors.purpleSoft} icon="📸" onPress={() => router.push('/(app)/feed')} />
+            <Feature title="כלב נעדר" sub="התראות בקהילה" bg={colors.roseSoft} icon="🚨" onPress={() => router.push('/(app)/lost-dogs')} />
+            <Feature title="טיולים קבוצתיים" sub="להיפגש בפארק" bg={colors.greenSoft} icon="👥" onPress={() => router.push('/(app)/social-walks')} />
+            <Feature title="מטיילי כלבים" sub="מי יוציא את הכלב" bg={colors.greenSoft} icon="🦮" onPress={() => router.push('/(app)/walkers')} />
+            <Feature title="הסטטיסטיקה שלי" sub="טיולים ורצף" bg={colors.purpleSoft} icon="📊" onPress={() => router.push('/(app)/walk-stats')} />
           </View>
         </ScrollView>
       </SafeAreaView>

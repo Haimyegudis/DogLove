@@ -36,6 +36,13 @@ export default function AppLayout() {
       <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="feed" options={{ title: 'גלריה' }} />
       <Stack.Screen name="new-post" options={{ title: 'שיתוף תמונה' }} />
+      <Stack.Screen name="lost-dogs" options={{ title: 'כלבים נעדרים' }} />
+      <Stack.Screen name="report-lost" options={{ title: 'דיווח על כלב נעדר' }} />
+      <Stack.Screen name="walk-stats" options={{ title: 'הסטטיסטיקה שלי' }} />
+      <Stack.Screen name="dog-health/[dogId]" options={{ title: 'בריאות הכלב' }} />
+      <Stack.Screen name="social-walks" options={{ title: 'טיולים קבוצתיים' }} />
+      <Stack.Screen name="new-social-walk" options={{ title: 'טיול קבוצתי חדש' }} />
+      <Stack.Screen name="walkers" options={{ title: 'מטיילי כלבים' }} />
     </Stack>
   );
 }
