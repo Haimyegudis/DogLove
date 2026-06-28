@@ -3,6 +3,7 @@ import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Alert } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/state/AuthContext';
 import { getDiscoverable, setDiscoverable, deleteAccount } from '../../src/services/privacy';
+import { getWalkerStatus, setWalker } from '../../src/services/walkers';
 import { colors, font, radius } from '../../src/theme';
 
 const SHARED = [
@@ -16,13 +17,21 @@ export default function Privacy() {
   const { session, signOut } = useAuth();
   const userId = session!.user.id;
   const [discoverable, setDisc] = useState(true);
+  const [isWalker, setIsWalker] = useState(false);
 
   useEffect(() => { getDiscoverable().then(({ data }) => setDisc(data)); }, []);
+  useEffect(() => { getWalkerStatus(userId).then(({ data }) => setIsWalker(data)); }, []);
 
   async function toggle(v: boolean) {
     setDisc(v);
     const { error } = await setDiscoverable(userId, v);
     if (error) { setDisc(!v); Alert.alert('שגיאה', error); }
+  }
+
+  async function toggleWalker(v: boolean) {
+    setIsWalker(v);
+    const { error } = await setWalker(userId, v);
+    if (error) { setIsWalker(!v); Alert.alert('שגיאה', error); }
   }
 
   function onDelete() {
@@ -48,6 +57,13 @@ export default function Privacy() {
               <View style={styles.toggleText}>
                 <Text style={styles.toggleTitle}>הופעה בחיפוש ובהכרויות</Text>
                 <Text style={styles.toggleSub}>כשמכובה, אחרים לא ימצאו אותך בחיפוש או בהכרויות.</Text>
+              </View>
+            </View>
+            <View style={styles.toggleRow}>
+              <Switch value={isWalker} onValueChange={toggleWalker} trackColor={{ true: colors.rose }} />
+              <View style={styles.toggleText}>
+                <Text style={styles.toggleTitle}>אני זמין/ה להוציא כלבים לטיול</Text>
+                <Text style={styles.toggleSub}>אחרים יוכלו למצוא אותך כמטייל/ת ולשלוח לך הודעה.</Text>
               </View>
             </View>
           </View>
