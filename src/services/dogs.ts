@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { Dog } from '../types/profile';
 
-const COLUMNS = 'id, owner_id, name, breed, age, size, photo_url, bio';
+const COLUMNS = 'id, owner_id, name, breed, age, size, gender, photo_url, bio';
 
 export async function listMyDogs(ownerId: string) {
   const { data, error } = await supabase

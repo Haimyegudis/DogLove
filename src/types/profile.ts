@@ -18,9 +18,16 @@ export interface Dog {
   breed: string;
   age: number;
   size: DogSize | null;
+  gender: DogGender | null;
   photo_url: string;
   bio: string | null;
 }
+
+export type DogGender = 'male' | 'female';
+export const DOG_GENDER_OPTIONS: { value: DogGender; label: string }[] = [
+  { value: 'male', label: 'זכר' },
+  { value: 'female', label: 'נקבה' },
+];
 
 export const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'female', label: 'נקבה' },

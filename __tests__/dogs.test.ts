@@ -16,7 +16,7 @@ beforeEach(() => jest.clearAllMocks());
 test('listMyDogs filters by owner and returns rows', async () => {
   mockOrder.mockResolvedValue({ data: [{ id: 'd1', name: 'Rocky' }], error: null });
   const res = await listMyDogs('u1');
-  expect(mockSelect).toHaveBeenCalledWith('id, owner_id, name, breed, age, size, photo_url, bio');
+  expect(mockSelect).toHaveBeenCalledWith('id, owner_id, name, breed, age, size, gender, photo_url, bio');
   expect(mockEqSel).toHaveBeenCalledWith('owner_id', 'u1');
   expect(res.data).toHaveLength(1);
   expect(res.error).toBeNull();
@@ -24,9 +24,9 @@ test('listMyDogs filters by owner and returns rows', async () => {
 
 test('createDog inserts with the owner id', async () => {
   mockInsert.mockResolvedValue({ error: null });
-  const res = await createDog('u1', { name: 'Rocky', breed: 'Lab', age: 3, size: 'L', photo_url: 'u', bio: null });
+  const res = await createDog('u1', { name: 'Rocky', breed: 'Lab', age: 3, size: 'L', gender: null, photo_url: 'u', bio: null });
   expect(mockInsert).toHaveBeenCalledWith({
-    owner_id: 'u1', name: 'Rocky', breed: 'Lab', age: 3, size: 'L', photo_url: 'u', bio: null,
+    owner_id: 'u1', name: 'Rocky', breed: 'Lab', age: 3, size: 'L', gender: null, photo_url: 'u', bio: null,
   });
   expect(res.error).toBeNull();
 });

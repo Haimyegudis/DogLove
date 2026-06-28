@@ -9,7 +9,7 @@ import { useAuth } from '../../../src/state/AuthContext';
 import { listMyDogs, createDog, updateDog, deleteDog } from '../../../src/services/dogs';
 import { uploadImage } from '../../../src/services/storage';
 import { pickSquareImage } from '../../../src/lib/pickImage';
-import { SIZE_OPTIONS, DogSize } from '../../../src/types/profile';
+import { SIZE_OPTIONS, DogSize, DOG_GENDER_OPTIONS, DogGender } from '../../../src/types/profile';
 import { colors, font, radius, shadow } from '../../../src/theme';
 
 export default function DogForm() {
@@ -23,6 +23,7 @@ export default function DogForm() {
   const [breed, setBreed] = useState('');
   const [age, setAge] = useState('');
   const [size, setSize] = useState<DogSize | null>(null);
+  const [gender, setGender] = useState<DogGender | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [bio, setBio] = useState('');
   const [busy, setBusy] = useState(false);
@@ -33,7 +34,7 @@ export default function DogForm() {
       const dog = data.find((d) => d.id === id);
       if (!dog) return;
       setName(dog.name); setBreed(dog.breed); setAge(String(dog.age));
-      setSize(dog.size); setPhoto(dog.photo_url); setBio(dog.bio ?? '');
+      setSize(dog.size); setGender((dog as any).gender ?? null); setPhoto(dog.photo_url); setBio(dog.bio ?? '');
     });
   }, [id, isNew, userId]);
 
@@ -48,6 +49,7 @@ export default function DogForm() {
     const ageNum = parseInt(age, 10);
     if (!age.trim() || isNaN(ageNum) || ageNum < 0) { Alert.alert('גיל לא תקין', 'הזן גיל במספרים'); return; }
     if (!photo) { Alert.alert('שדה חסר', 'יש להוסיף תמונה של הכלב'); return; }
+    if (!gender) { Alert.alert('שדה חסר', 'יש לבחור מין'); return; }
 
     setBusy(true);
     let photoUrl = photo;
@@ -56,7 +58,7 @@ export default function DogForm() {
       if (up.error) { setBusy(false); Alert.alert('שגיאת העלאה', up.error); return; }
       photoUrl = up.url!;
     }
-    const payload = { name: name.trim(), breed: breed.trim(), age: ageNum, size, photo_url: photoUrl, bio: bio.trim() || null };
+    const payload = { name: name.trim(), breed: breed.trim(), age: ageNum, size, gender, photo_url: photoUrl, bio: bio.trim() || null };
     const { error } = isNew ? await createDog(userId, payload) : await updateDog(id, payload);
     setBusy(false);
     if (error) { Alert.alert('שמירה נכשלה', error); return; }
@@ -101,6 +103,16 @@ export default function DogForm() {
                   <Pressable key={s.value} onPress={() => setSize(size === s.value ? null : s.value)}
                     style={[styles.chip, size === s.value && styles.chipOn]}>
                     <Text style={[styles.chipText, size === s.value && styles.chipTextOn]}>{s.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </FormField>
+            <FormField label="מין">
+              <View style={styles.chips}>
+                {DOG_GENDER_OPTIONS.map((g) => (
+                  <Pressable key={g.value} onPress={() => setGender(gender === g.value ? null : g.value)}
+                    style={[styles.chip, gender === g.value && styles.chipOn]}>
+                    <Text style={[styles.chipText, gender === g.value && styles.chipTextOn]}>{g.label}</Text>
                   </Pressable>
                 ))}
               </View>
