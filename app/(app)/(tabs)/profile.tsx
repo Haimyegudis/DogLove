@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import DogParkBackground from '../../../src/components/DogParkBackground';
@@ -11,6 +11,8 @@ import { useAuth } from '../../../src/state/AuthContext';
 import { useI18n } from '../../../src/i18n/LanguageContext';
 import { getMyProfile } from '../../../src/services/profile';
 import { amIPremium } from '../../../src/services/premium';
+import { getWalkerStatus, setWalker } from '../../../src/services/walkers';
+import { requestLocationPermission, getCurrentCoords } from '../../../src/services/location';
 import { listMyDogs } from '../../../src/services/dogs';
 import { ageFromISO } from '../../../src/lib/age';
 import { OwnerProfile, Dog, GENDER_OPTIONS } from '../../../src/types/profile';
@@ -26,6 +28,8 @@ export default function Home() {
   const [profile, setProfile] = useState<OwnerProfile | null>(null);
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [premium, setPremium] = useState(false);
+  const [isWalker, setIsWalker] = useState(false);
+  const [walkerBusy, setWalkerBusy] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -33,9 +37,30 @@ export default function Home() {
       getMyProfile(userId).then(({ data }) => active && setProfile(data));
       listMyDogs(userId).then(({ data }) => active && setDogs(data));
       amIPremium().then(({ data }) => active && setPremium(!!data));
+      getWalkerStatus(userId).then(({ data }) => active && setIsWalker(data));
       return () => { active = false; };
     }, [userId]),
   );
+
+  async function onToggleWalker(value: boolean) {
+    setWalkerBusy(true);
+    try {
+      let coords = null;
+      if (value) {
+        // Capture location so the user shows up in radius-based walker search.
+        const ok = await requestLocationPermission();
+        if (ok) coords = await getCurrentCoords();
+      }
+      const { error } = await setWalker(userId, value, coords);
+      if (error) { Alert.alert('שגיאה', error); return; }
+      setIsWalker(value);
+      if (value && !coords) {
+        Alert.alert('הופעלת כמטייל/ת', 'לא קיבלנו מיקום, אז לא תופיע בחיפוש לפי מרחק. אפשר לאשר מיקום ולהפעיל שוב.');
+      }
+    } finally {
+      setWalkerBusy(false);
+    }
+  }
 
   const incomplete = !profile?.display_name || !profile?.photo_url || !profile?.date_of_birth;
   const now = new Date();
@@ -81,6 +106,20 @@ export default function Home() {
               {!premium ? <Text style={styles.upgradeHint}>{t('profile.upgradeHint')}</Text> : null}
             </Pressable>
           )}
+
+          <View style={[styles.walkerCard, shadow.card]}>
+            <View style={styles.walkerText}>
+              <Text style={styles.walkerTitle}>🦮 אני מטייל/ת כלבים</Text>
+              <Text style={styles.walkerSub}>אחרים יוכלו למצוא אותך בחיפוש מטיילים לפי מרחק וישלחו לך הודעה.</Text>
+            </View>
+            <Switch
+              value={isWalker}
+              disabled={walkerBusy}
+              onValueChange={onToggleWalker}
+              trackColor={{ true: colors.green, false: colors.lineCool }}
+              thumbColor={colors.white}
+            />
+          </View>
 
           <View style={styles.dogsHeader}>
             <Text style={styles.dogsTitle}>{t('profile.myDogs')}</Text>
@@ -130,6 +169,10 @@ const styles = StyleSheet.create({
   edit: { fontFamily: font.medium, color: colors.coralDeep, fontSize: 13 },
   badgeRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   upgradeHint: { fontFamily: font.medium, color: colors.purple, fontSize: 13 },
+  walkerCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, backgroundColor: colors.white, borderRadius: radius.lg, padding: 16, borderWidth: 1, borderColor: colors.line },
+  walkerText: { flex: 1 },
+  walkerTitle: { fontFamily: font.bold, fontSize: 15, color: colors.bark, textAlign: 'right' },
+  walkerSub: { fontFamily: font.regular, fontSize: 12, color: colors.caramel, textAlign: 'right', marginTop: 2 },
 
   dogsHeader: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
   dogsTitle: { fontFamily: font.black, fontSize: 18, color: colors.bark },

@@ -15,7 +15,7 @@ jest.mock('../src/lib/supabase', () => {
     },
   };
 });
-import { availableWalkers, setWalker, startConversation, getWalkerStatus } from '../src/services/walkers';
+import { availableWalkers, nearbyWalkers, setWalker, startConversation, getWalkerStatus } from '../src/services/walkers';
 import { supabase } from '../src/lib/supabase';
 const m = (supabase as any).__m;
 
@@ -32,11 +32,22 @@ test('availableWalkers calls rpc with available_walkers and p_city', async () =>
   expect(m.rpc).toHaveBeenCalledWith('available_walkers', { p_city: '' });
 });
 
-test('setWalker calls profiles.update({ is_walker: true }).eq(id)', async () => {
-  m.eq.mockResolvedValue({ error: null });
-  await setWalker('user-1', true);
-  expect(m.update).toHaveBeenCalledWith({ is_walker: true });
-  expect(m.eq).toHaveBeenCalledWith('id', 'user-1');
+test('setWalker calls rpc set_walker with flag and coords', async () => {
+  m.rpc.mockResolvedValue({ error: null });
+  await setWalker('user-1', true, { lat: 32.1, lng: 34.8 });
+  expect(m.rpc).toHaveBeenCalledWith('set_walker', { p_on: true, p_lat: 32.1, p_lng: 34.8 });
+});
+
+test('setWalker without coords passes null lat/lng', async () => {
+  m.rpc.mockResolvedValue({ error: null });
+  await setWalker('user-1', false);
+  expect(m.rpc).toHaveBeenCalledWith('set_walker', { p_on: false, p_lat: null, p_lng: null });
+});
+
+test('nearbyWalkers calls rpc nearby_walkers with coords and radius', async () => {
+  m.rpc.mockResolvedValue({ data: [], error: null });
+  await nearbyWalkers({ lat: 32.1, lng: 34.8 }, 5000);
+  expect(m.rpc).toHaveBeenCalledWith('nearby_walkers', { p_lat: 32.1, p_lng: 34.8, p_radius_m: 5000 });
 });
 
 test('startConversation calls rpc with get_or_create_conversation and p_other', async () => {

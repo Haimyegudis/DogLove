@@ -5,4 +5,5 @@ export interface Walker {
   city: string | null;
   avg_stars: number;
   rating_count: number;
+  distance_m?: number;
 }
