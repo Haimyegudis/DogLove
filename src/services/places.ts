@@ -38,6 +38,40 @@ function buildOQL(kind: PlaceKind, radiusM: number, lat: number, lng: number): s
 );out center 50;`;
 }
 
+// Public Overpass mirrors, tried in order. The main overpass-api.de host often
+// rate-limits or rejects mobile requests (429/406/504), so we fall back across
+// several mirrors and use whichever answers first.
+const OVERPASS_MIRRORS = [
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.osm.ch/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+];
+
+async function fetchOverpass(oql: string): Promise<any[]> {
+  const body = 'data=' + encodeURIComponent(oql);
+  let lastErr = '';
+  for (const url of OVERPASS_MIRRORS) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) { lastErr = `שגיאת שרת: ${res.status}`; continue; }
+      const json = await res.json();
+      return json?.elements ?? [];
+    } catch (err: unknown) {
+      clearTimeout(timer);
+      lastErr = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    }
+  }
+  throw new Error(lastErr || 'כל השרתים לא זמינים כרגע');
+}
+
 export async function nearbyPlaces(
   lat: number,
   lng: number,
@@ -46,21 +80,7 @@ export async function nearbyPlaces(
 ): Promise<PlacesResult> {
   const oql = buildOQL(kind, radiusM, lat, lng);
   try {
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain',
-        'User-Agent': 'DogLove/1.0 (dog social app)',
-      },
-      body: oql,
-    });
-
-    if (!res.ok) {
-      return { data: [], error: `שגיאת שרת: ${res.status}` };
-    }
-
-    const json = await res.json();
-    const elements: any[] = json?.elements ?? [];
+    const elements = await fetchOverpass(oql);
 
     const places: Place[] = elements
       .map((el) => {

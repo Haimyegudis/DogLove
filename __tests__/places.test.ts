@@ -67,7 +67,7 @@ test('nearbyPlaces POSTs a body containing the right OSM tag for vet', async () 
   await nearbyPlaces(32.0, 35.0, 'vet', 3000);
 
   // @ts-ignore
-  const body: string = (global.fetch as jest.Mock).mock.calls[0][1].body;
+  const body: string = decodeURIComponent((global.fetch as jest.Mock).mock.calls[0][1].body);
   expect(body).toContain('"amenity"="veterinary"');
   expect(body).toContain('3000');
 });
@@ -77,7 +77,7 @@ test('nearbyPlaces POSTs a body containing dog_park tag for park', async () => {
   await nearbyPlaces(32.0, 35.0, 'park');
 
   // @ts-ignore
-  const body: string = (global.fetch as jest.Mock).mock.calls[0][1].body;
+  const body: string = decodeURIComponent((global.fetch as jest.Mock).mock.calls[0][1].body);
   expect(body).toContain('"leisure"="dog_park"');
 });
 
@@ -86,7 +86,7 @@ test('nearbyPlaces POSTs a body containing shop=pet tag for petshop', async () =
   await nearbyPlaces(32.0, 35.0, 'petshop');
 
   // @ts-ignore
-  const body: string = (global.fetch as jest.Mock).mock.calls[0][1].body;
+  const body: string = decodeURIComponent((global.fetch as jest.Mock).mock.calls[0][1].body);
   expect(body).toContain('"shop"="pet"');
 });
 
@@ -96,7 +96,7 @@ test('nearbyPlaces uses default radius 5000 when not supplied', async () => {
   await nearbyPlaces(32.0, 35.0, 'vet');
 
   // @ts-ignore
-  const body: string = (global.fetch as jest.Mock).mock.calls[0][1].body;
+  const body: string = decodeURIComponent((global.fetch as jest.Mock).mock.calls[0][1].body);
   expect(body).toContain('5000');
 });
 
@@ -141,12 +141,14 @@ test('nearbyPlaces returns error string when fetch rejects', async () => {
   expect(error).toBe('Network request failed');
 });
 
-// ── 9. Correct User-Agent header ─────────────────────────────────────────────
-test('nearbyPlaces sends User-Agent header', async () => {
+// ── 9. Form-encoded request to an Overpass mirror ────────────────────────────
+test('nearbyPlaces POSTs form-encoded data to an Overpass mirror', async () => {
   mockFetch({ elements: [] });
   await nearbyPlaces(32.0, 35.0, 'vet');
 
   // @ts-ignore
-  const headers = (global.fetch as jest.Mock).mock.calls[0][1].headers;
-  expect(headers['User-Agent']).toMatch(/DogLove/);
+  const [url, opts] = (global.fetch as jest.Mock).mock.calls[0];
+  expect(url).toContain('/api/interpreter');
+  expect(opts.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+  expect(opts.body.startsWith('data=')).toBe(true);
 });

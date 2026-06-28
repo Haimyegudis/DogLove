@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DogCard from '../../src/components/DogCard';
 import Avatar from '../../src/components/Avatar';
+import CityPicker from '../../src/components/CityPicker';
 import { searchDogs, searchUsers } from '../../src/services/search';
 import type { BrowseDog } from '../../src/types/match';
 import type { UserResult } from '../../src/types/search';
@@ -66,8 +67,7 @@ export default function Search() {
             </View>
           )}
 
-          <TextInput style={styles.input} placeholder="עיר (אופציונלי)" placeholderTextColor={colors.inkCoolSoft}
-            value={city} onChangeText={setCity} />
+          <CityPicker value={city} onChange={setCity} placeholder="עיר (אופציונלי)" onSubmit={run} />
 
           <Pressable onPress={run} style={styles.searchBtn}><Text style={styles.searchText}>חפש</Text></Pressable>
 

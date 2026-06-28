@@ -6,6 +6,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import DogParkBackground from '../../src/components/DogParkBackground';
 import Avatar from '../../src/components/Avatar';
 import FormField from '../../src/components/FormField';
+import CityPicker from '../../src/components/CityPicker';
 import { useAuth } from '../../src/state/AuthContext';
 import { getMyProfile, saveMyProfile } from '../../src/services/profile';
 import { uploadImage } from '../../src/services/storage';
@@ -123,8 +124,8 @@ export default function EditProfile() {
               </View>
             </FormField>
 
-            <FormField label="עיר">
-              <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder="עיר מגורים" placeholderTextColor={colors.inkSoft} />
+            <FormField label="יישוב">
+              <CityPicker value={city} onChange={setCity} placeholder="עיר / מושב / קיבוץ" />
             </FormField>
 
             <FormField label="קצת עליי (אופציונלי)">

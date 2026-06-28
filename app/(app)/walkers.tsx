@@ -6,6 +6,7 @@ import { nearbyWalkers, startConversation } from '../../src/services/walkers';
 import { requestLocationPermission, getCurrentCoords } from '../../src/services/location';
 import { geocodeCity } from '../../src/services/geocode';
 import Avatar from '../../src/components/Avatar';
+import CityPicker from '../../src/components/CityPicker';
 import type { Walker } from '../../src/types/walker';
 import type { Coords } from '../../src/types/walk';
 
@@ -77,16 +78,9 @@ export default function Walkers() {
 
       <View style={styles.controls}>
         <View style={styles.searchRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="חפש עיר או כתובת…"
-            placeholderTextColor={colors.inkCoolSoft}
-            value={cityQ}
-            onChangeText={setCityQ}
-            onSubmitEditing={onSearchCity}
-            returnKeyType="search"
-            textAlign="right"
-          />
+          <View style={{ flex: 1 }}>
+            <CityPicker value={cityQ} onChange={setCityQ} placeholder="חפש עיר או כתובת…" onSubmit={onSearchCity} />
+          </View>
           <Pressable style={styles.searchBtn} onPress={onSearchCity}>
             <Text style={styles.searchBtnText}>חפש</Text>
           </Pressable>
