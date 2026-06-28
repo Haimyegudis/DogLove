@@ -19,10 +19,10 @@ test('updateWalkLocation calls update_walk_location rpc', async () => {
   expect(mockRpc).toHaveBeenCalledWith('update_walk_location', { p_dog_id: 'd1', p_lat: 1, p_lng: 2 });
 });
 
-test('endWalk calls end_walk rpc', async () => {
+test('endWalk calls end_walk rpc with distance', async () => {
   mockRpc.mockResolvedValue({ error: null });
   await endWalk('d1');
-  expect(mockRpc).toHaveBeenCalledWith('end_walk', { p_dog_id: 'd1' });
+  expect(mockRpc).toHaveBeenCalledWith('end_walk', { p_dog_id: 'd1', p_distance_m: 0 });
 });
 
 test('nearbyDogs calls nearby_active_dogs and returns rows', async () => {

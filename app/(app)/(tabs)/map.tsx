@@ -14,6 +14,14 @@ import { useAuth } from '../../../src/state/AuthContext';
 import WalkControls from '../../../src/components/WalkControls';
 import type { Coords, NearbyDog } from '../../../src/types/walk';
 
+function haversine(a: Coords, b: Coords): number {
+  const R = 6371000;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
 export default function MapScreen() {
   const { session } = useAuth();
   const userId = session!.user.id;
@@ -24,6 +32,8 @@ export default function MapScreen() {
   const walkDogId = useRef<string | null>(null);
   const watcher = useRef<{ remove: () => void } | null>(null);
   const toggling = useRef(false);
+  const distanceRef = useRef(0);
+  const lastWalkCoordRef = useRef<Coords | null>(null);
   const [focusNonce, setFocusNonce] = useState(0);
   const [searchCenter, setSearchCenter] = useState<Coords | null>(null);
   const [cityQ, setCityQ] = useState('');
@@ -64,7 +74,7 @@ export default function MapScreen() {
     })();
     return () => {
       watcher.current?.remove();
-      if (walkDogId.current) endWalk(walkDogId.current);
+      if (walkDogId.current) endWalk(walkDogId.current, distanceRef.current);
     };
   }, []);
 
@@ -94,12 +104,16 @@ export default function MapScreen() {
       const c = coords ?? (await getCurrentCoords());
       if (!c) { Alert.alert('אין מיקום', 'לא הצלחנו לקבל מיקום.'); return; }
       const dogId = myDogs[0].id;
+      distanceRef.current = 0;
+      lastWalkCoordRef.current = c;
       const { error } = await startWalk(dogId, c);
       if (error) { Alert.alert('שגיאה', error); return; }
       walkDogId.current = dogId;
       setWalking(true);
       refreshNearby(c, radiusM); // show my dog on the map immediately, don't wait for realtime
       watcher.current = await watchCoords(async (nc) => {
+        if (lastWalkCoordRef.current) distanceRef.current += haversine(lastWalkCoordRef.current, nc);
+        lastWalkCoordRef.current = nc;
         setCoords(nc);
         if (walkDogId.current) await updateWalkLocation(walkDogId.current, nc);
       });
@@ -115,7 +129,7 @@ export default function MapScreen() {
       if (walking) {
         watcher.current?.remove();
         watcher.current = null;
-        if (walkDogId.current) await endWalk(walkDogId.current);
+        if (walkDogId.current) await endWalk(walkDogId.current, distanceRef.current);
         walkDogId.current = null;
         setWalking(false);
         if (coords) refreshNearby(coords, radiusM);

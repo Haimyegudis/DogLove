@@ -11,8 +11,8 @@ export async function updateWalkLocation(dogId: string, c: Coords) {
   return { error: error?.message ?? null };
 }
 
-export async function endWalk(dogId: string) {
-  const { error } = await supabase.rpc('end_walk', { p_dog_id: dogId });
+export async function endWalk(dogId: string, distanceM = 0) {
+  const { error } = await supabase.rpc('end_walk', { p_dog_id: dogId, p_distance_m: distanceM });
   return { error: error?.message ?? null };
 }
 
