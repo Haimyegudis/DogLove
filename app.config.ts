@@ -10,6 +10,7 @@ const config = {
   icon: './assets/icon.png',
   android: {
     package: 'com.doglove.app',
+    googleServicesFile: './google-services.json',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#FFE1EC',

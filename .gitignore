@@ -7,3 +7,5 @@ web-build/
 
 # SDD process scratch (briefs, reports, review diffs)
 .superpowers/
+
+fcm-service-account.json

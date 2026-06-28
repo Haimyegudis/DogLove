@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "175163679913",
+    "project_id": "doglove-d9254",
+    "storage_bucket": "doglove-d9254.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:175163679913:android:ff3d910a3b558f6aa5f5b8",
+        "android_client_info": {
+          "package_name": "com.doglove.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSa8AjTIprR7enZuzDCcEQ3yDCUBp7eZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
