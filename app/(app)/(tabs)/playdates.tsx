@@ -39,7 +39,9 @@ export default function Playdates() {
           <Text style={styles.section}>בקשות שהתקבלו</Text>
           {incoming.length === 0 ? <Text style={styles.empty}>אין בקשות חדשות</Text> : incoming.map((r) => (
             <View key={r.request_id} style={styles.reqWrap}>
-              <DogCard photo={r.dog_photo} name={r.dog_name} breed={r.dog_breed} subtitle={r.owner_name ?? undefined} right={statusLabel[r.status]} />
+              <DogCard photo={r.dog_photo} name={r.dog_name} breed={r.dog_breed} subtitle={r.owner_name ?? undefined}
+                right={statusLabel[r.status]}
+                onPress={r.status === 'accepted' ? () => router.push('/(app)/dog-view/' + r.dog_id) : undefined} />
               {r.status === 'pending' && (
                 <View style={styles.actions}>
                   <Pressable onPress={() => respond(r.request_id, true)} style={[styles.act, styles.accept]}><Text style={styles.actText}>אישור</Text></Pressable>
@@ -51,7 +53,9 @@ export default function Playdates() {
 
           <Text style={styles.section}>בקשות שנשלחו</Text>
           {outgoing.length === 0 ? <Text style={styles.empty}>עוד לא שלחת בקשות</Text> : outgoing.map((r) => (
-            <DogCard key={r.request_id} photo={r.dog_photo} name={r.dog_name} breed={r.dog_breed} subtitle={r.owner_name ?? undefined} right={statusLabel[r.status]} />
+            <DogCard key={r.request_id} photo={r.dog_photo} name={r.dog_name} breed={r.dog_breed} subtitle={r.owner_name ?? undefined}
+              right={statusLabel[r.status]}
+              onPress={r.status === 'accepted' ? () => router.push('/(app)/dog-view/' + r.dog_id) : undefined} />
           ))}
         </ScrollView>
       </SafeAreaView>

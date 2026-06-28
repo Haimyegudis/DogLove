@@ -77,6 +77,7 @@ export default function AppLayout() {
       <Stack.Screen name="premium" options={{ title: 'Premium' }} />
       <Stack.Screen name="active-walkers" options={{ title: 'מטיילים פעילים' }} />
       <Stack.Screen name="place/[id]" options={{ title: 'מקום' }} />
+      <Stack.Screen name="dog-view/[dogId]" options={{ title: 'כרטיס כלב' }} />
     </Stack>
     </>
   );

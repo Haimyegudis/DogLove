@@ -30,9 +30,14 @@ beforeEach(() => {
 
 test('listFeed calls rpc list_feed with p_limit 50', async () => {
   const res = await listFeed();
-  expect(m.rpc).toHaveBeenCalledWith('list_feed', { p_limit: 50 });
+  expect(m.rpc).toHaveBeenCalledWith('list_feed', { p_limit: 50, p_lat: null, p_lng: null });
   expect(res.error).toBeNull();
   expect(Array.isArray(res.data)).toBe(true);
+});
+
+test('listFeed passes coords when given (distance sort)', async () => {
+  await listFeed(50, { lat: 32.1, lng: 34.8 });
+  expect(m.rpc).toHaveBeenCalledWith('list_feed', { p_limit: 50, p_lat: 32.1, p_lng: 34.8 });
 });
 
 test('createPost calls from(dog_posts) then insert with correct fields', async () => {

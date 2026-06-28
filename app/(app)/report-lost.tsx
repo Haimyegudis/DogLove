@@ -9,7 +9,9 @@ import { uploadImage } from '../../src/services/storage';
 import { pickSquareImage } from '../../src/lib/pickImage';
 import { getCurrentCoords } from '../../src/services/location';
 import { reportLostDog } from '../../src/services/lost';
+import MapPicker from '../../src/components/MapPicker';
 import type { Dog } from '../../src/types/profile';
+import type { Coords } from '../../src/types/walk';
 
 export default function ReportLost() {
   const router = useRouter();
@@ -21,10 +23,13 @@ export default function ReportLost() {
   const [dogName, setDogName] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [pin, setPin] = useState<Coords | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     listMyDogs(userId).then(({ data }) => setDogs(data));
+    // Seed the map with the current location; the user can drag the pin.
+    getCurrentCoords().then((c) => { if (c) setPin(c); });
   }, [userId]);
 
   function handleSelectDog(dog: Dog) {
@@ -60,7 +65,8 @@ export default function ReportLost() {
 
     setSubmitting(true);
     try {
-      const coords = await getCurrentCoords();
+      // Prefer the pin the user dropped; fall back to current GPS.
+      const coords = pin ?? (await getCurrentCoords());
 
       let photoUrl: string | null = photo;
       if (photo && photo.startsWith('file:')) {
@@ -143,6 +149,18 @@ export default function ReportLost() {
         ) : null}
       </View>
 
+      {/* מיקום על המפה */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>סמן מיקום אחרון על המפה 📍</Text>
+        <Text style={styles.locHint}>גע במפה כדי לסמן את המקום שבו נראה הכלב לאחרונה</Text>
+        <View style={styles.mapBox}>
+          <MapPicker initial={pin} onPick={setPin} />
+        </View>
+        <Pressable style={styles.locBtn} onPress={async () => { const c = await getCurrentCoords(); if (c) setPin(c); }}>
+          <Text style={styles.locBtnText}>📍 השתמש במיקום הנוכחי</Text>
+        </Pressable>
+      </View>
+
       {/* הערה */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>הערה</Text>
@@ -188,6 +206,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  locHint: { fontFamily: font.regular, fontSize: 12, color: colors.inkCoolSoft, textAlign: 'right' },
+  mapBox: { height: 220, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.lineCool },
+  locBtn: { alignSelf: 'flex-end', backgroundColor: colors.greenSoft, borderRadius: radius.pill, paddingVertical: 7, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.green },
+  locBtnText: { fontFamily: font.bold, fontSize: 13, color: colors.green },
   chip: {
     backgroundColor: colors.roseSoft,
     borderRadius: radius.pill,

@@ -3,6 +3,27 @@ import type { Dog } from '../types/profile';
 
 const COLUMNS = 'id, owner_id, name, breed, age, size, gender, photo_url, bio';
 
+export interface DogCard {
+  dog_id: string;
+  name: string;
+  breed: string;
+  age: number;
+  size: string | null;
+  gender: string | null;
+  photo_url: string | null;
+  bio: string | null;
+  owner_id: string;
+  owner_name: string | null;
+  owner_photo: string | null;
+}
+
+// Read-only public card for another owner's dog (e.g. after a playdate).
+export async function getDogCard(dogId: string) {
+  const { data, error } = await supabase.rpc('get_dog_card', { p_dog_id: dogId });
+  const row = (data as DogCard[])?.[0] ?? null;
+  return { data: row, error: error?.message ?? null };
+}
+
 export async function listMyDogs(ownerId: string) {
   const { data, error } = await supabase
     .from('dogs')

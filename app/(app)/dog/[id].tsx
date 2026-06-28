@@ -5,10 +5,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import DogParkBackground from '../../../src/components/DogParkBackground';
 import Avatar from '../../../src/components/Avatar';
 import FormField from '../../../src/components/FormField';
+import PhotoGallery from '../../../src/components/PhotoGallery';
 import { useAuth } from '../../../src/state/AuthContext';
 import { listMyDogs, createDog, updateDog, deleteDog } from '../../../src/services/dogs';
+import { listDogPhotos, addGalleryPhoto, deleteGalleryPhoto, type GalleryPhoto } from '../../../src/services/gallery';
 import { uploadImage } from '../../../src/services/storage';
-import { pickSquareImage } from '../../../src/lib/pickImage';
+import { pickSquareImage, pickMultipleImages } from '../../../src/lib/pickImage';
 import { SIZE_OPTIONS, DogSize, DOG_GENDER_OPTIONS, DogGender } from '../../../src/types/profile';
 import { colors, font, radius, shadow } from '../../../src/theme';
 
@@ -27,6 +29,8 @@ export default function DogForm() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [bio, setBio] = useState('');
   const [busy, setBusy] = useState(false);
+  const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
+  const [galleryBusy, setGalleryBusy] = useState(false);
 
   useEffect(() => {
     if (isNew) return;
@@ -36,7 +40,26 @@ export default function DogForm() {
       setName(dog.name); setBreed(dog.breed); setAge(String(dog.age));
       setSize(dog.size); setGender((dog as any).gender ?? null); setPhoto(dog.photo_url); setBio(dog.bio ?? '');
     });
+    listDogPhotos(id).then(({ data }) => setPhotos(data));
   }, [id, isNew, userId]);
+
+  async function onAddPhotos() {
+    const uris = await pickMultipleImages();
+    if (uris.length === 0) return;
+    setGalleryBusy(true);
+    for (const uri of uris) {
+      const up = await uploadImage('dog-photos', userId, uri);
+      if (up.url) await addGalleryPhoto(userId, id, up.url);
+    }
+    const { data } = await listDogPhotos(id);
+    setPhotos(data);
+    setGalleryBusy(false);
+  }
+
+  async function onDeletePhoto(photoId: string) {
+    await deleteGalleryPhoto(photoId);
+    setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+  }
 
   async function onPickPhoto() {
     const uri = await pickSquareImage();
@@ -129,6 +152,11 @@ export default function DogForm() {
 
           {!isNew && (
             <>
+              <View style={[styles.card, shadow.card]}>
+                <Text style={styles.galleryTitle}>הגלריה של {name || 'הכלב'} 📸</Text>
+                <PhotoGallery photos={photos} editable busy={galleryBusy} onAdd={onAddPhotos} onDelete={onDeletePhoto} />
+              </View>
+
               <Pressable onPress={() => router.push('/(app)/dog-health/' + id)} style={styles.healthBtn}>
                 <Text style={styles.healthBtnText}>💉 בריאות וחיסונים</Text>
               </Pressable>
@@ -166,6 +194,7 @@ const styles = StyleSheet.create({
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
   deleteBtn: { alignItems: 'center', paddingVertical: 10 },
   deleteText: { fontFamily: font.medium, color: colors.danger, fontSize: 15 },
+  galleryTitle: { fontFamily: font.bold, fontSize: 15, color: colors.bark, textAlign: 'right', marginBottom: 8 },
   healthBtn: { alignItems: 'center', paddingVertical: 12, backgroundColor: colors.purpleSoft, borderWidth: 1.5, borderColor: colors.purple, borderRadius: radius.pill },
   healthBtnText: { fontFamily: font.bold, color: colors.purple, fontSize: 15 },
 });

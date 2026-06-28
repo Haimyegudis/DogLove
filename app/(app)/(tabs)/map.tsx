@@ -10,6 +10,7 @@ import { geocodeCity } from '../../../src/services/geocode';
 import { startWalk, endWalk, updateWalkLocation, nearbyDogs } from '../../../src/services/walk';
 import { subscribeActiveWalks } from '../../../src/services/walkRealtime';
 import { amIPremium } from '../../../src/services/premium';
+import { setHomeLocation } from '../../../src/services/feed';
 import { listMyDogs } from '../../../src/services/dogs';
 import { useAuth } from '../../../src/state/AuthContext';
 import WalkControls from '../../../src/components/WalkControls';
@@ -85,7 +86,7 @@ export default function MapScreen() {
       const last = await getLastKnownCoords();  // instant first center
       if (last) setCoords(last);
       const c = await getCurrentCoords();        // precise fix
-      if (c) setCoords(c);
+      if (c) { setCoords(c); setHomeLocation(c.lat, c.lng); } // stamp home for distance-based feed
     })();
     return () => {
       watcher.current?.remove();

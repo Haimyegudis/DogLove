@@ -5,8 +5,10 @@ import { useFocusEffect } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
 import { useAuth } from '../../src/state/AuthContext';
 import { colors, font } from '../../src/theme';
-import { listFeed, reactToPost, removeReaction } from '../../src/services/feed';
+import { listFeed, reactToPost, removeReaction, setHomeLocation } from '../../src/services/feed';
+import { getCurrentCoords } from '../../src/services/location';
 import type { FeedPost } from '../../src/types/feed';
+import type { Coords } from '../../src/types/walk';
 
 const EMOJIS = ['❤️', '🐾', '😍', '👏'];
 
@@ -51,6 +53,10 @@ function PostCard({ post, userId, onReact }: PostCardProps) {
         <Text style={styles.caption}>{post.caption}</Text>
       ) : null}
 
+      {post.distance_m != null ? (
+        <Text style={styles.distance}>📍 {(post.distance_m / 1000).toFixed(1)} ק"מ ממך</Text>
+      ) : null}
+
       {/* Reactions row */}
       <View style={styles.reactionsRow}>
         {EMOJIS.map((emoji) => (
@@ -78,21 +84,28 @@ export default function Feed() {
 
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sortBy, setSortBy] = useState<'recent' | 'nearby'>('recent');
+  const [coords, setCoords] = useState<Coords | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (mode: 'recent' | 'nearby') => {
     setLoading(true);
     try {
-      const { data } = await listFeed(50);
+      let c = coords;
+      if (mode === 'nearby' && !c) {
+        c = await getCurrentCoords();
+        if (c) { setCoords(c); setHomeLocation(c.lat, c.lng); } // stamp my home so others can find me too
+      }
+      const { data } = await listFeed(50, mode === 'nearby' ? c : null);
       setPosts(data);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [coords]);
 
   useFocusEffect(
     useCallback(() => {
-      load();
-    }, [load]),
+      load(sortBy);
+    }, [load, sortBy]),
   );
 
   return (
@@ -108,6 +121,15 @@ export default function Feed() {
         }}
       />
 
+      <View style={styles.sortRow}>
+        <Pressable onPress={() => setSortBy('recent')} style={[styles.sortChip, sortBy === 'recent' && styles.sortChipOn]}>
+          <Text style={[styles.sortText, sortBy === 'recent' && styles.sortTextOn]}>חדש</Text>
+        </Pressable>
+        <Pressable onPress={() => setSortBy('nearby')} style={[styles.sortChip, sortBy === 'nearby' && styles.sortChipOn]}>
+          <Text style={[styles.sortText, sortBy === 'nearby' && styles.sortTextOn]}>קרוב אליי 📍</Text>
+        </Pressable>
+      </View>
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.rose} />
@@ -118,7 +140,7 @@ export default function Feed() {
           data={posts}
           keyExtractor={(item) => item.post_id}
           renderItem={({ item }) => (
-            <PostCard post={item} userId={userId} onReact={load} />
+            <PostCard post={item} userId={userId} onReact={() => load(sortBy)} />
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
@@ -135,6 +157,12 @@ export default function Feed() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bgApp },
+  sortRow: { flexDirection: 'row-reverse', gap: 8, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 },
+  sortChip: { borderRadius: 999, borderWidth: 1.5, borderColor: colors.lineCool, paddingVertical: 6, paddingHorizontal: 14, backgroundColor: colors.white },
+  sortChipOn: { backgroundColor: colors.rose, borderColor: colors.rose },
+  sortText: { fontFamily: font.medium, fontSize: 13, color: colors.inkCoolSoft },
+  sortTextOn: { color: colors.white, fontFamily: font.bold },
+  distance: { fontFamily: font.medium, fontSize: 12, color: colors.rose, textAlign: 'right', paddingHorizontal: 10 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   loadingText: { fontFamily: font.regular, color: colors.inkCoolSoft, fontSize: 15 },
   list: { paddingVertical: 8 },

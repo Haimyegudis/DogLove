@@ -7,6 +7,10 @@ import BrandLockup from '../../../src/components/BrandLockup';
 import Avatar from '../../../src/components/Avatar';
 import VerifiedBadge from '../../../src/components/VerifiedBadge';
 import { PremiumBadge } from '../../../src/components/PremiumBadge';
+import PhotoGallery from '../../../src/components/PhotoGallery';
+import { listOwnerPhotos, addGalleryPhoto, deleteGalleryPhoto, type GalleryPhoto } from '../../../src/services/gallery';
+import { uploadImage } from '../../../src/services/storage';
+import { pickMultipleImages } from '../../../src/lib/pickImage';
 import { useAuth } from '../../../src/state/AuthContext';
 import { useI18n } from '../../../src/i18n/LanguageContext';
 import { getMyProfile } from '../../../src/services/profile';
@@ -30,6 +34,8 @@ export default function Home() {
   const [premium, setPremium] = useState(false);
   const [isWalker, setIsWalker] = useState(false);
   const [walkerBusy, setWalkerBusy] = useState(false);
+  const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
+  const [photosBusy, setPhotosBusy] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -38,9 +44,28 @@ export default function Home() {
       listMyDogs(userId).then(({ data }) => active && setDogs(data));
       amIPremium().then(({ data }) => active && setPremium(!!data));
       getWalkerStatus(userId).then(({ data }) => active && setIsWalker(data));
+      listOwnerPhotos(userId).then(({ data }) => active && setPhotos(data));
       return () => { active = false; };
     }, [userId]),
   );
+
+  async function onAddPhotos() {
+    const uris = await pickMultipleImages();
+    if (uris.length === 0) return;
+    setPhotosBusy(true);
+    for (const uri of uris) {
+      const up = await uploadImage('dog-photos', userId, uri);
+      if (up.url) await addGalleryPhoto(userId, null, up.url);
+    }
+    const { data } = await listOwnerPhotos(userId);
+    setPhotos(data);
+    setPhotosBusy(false);
+  }
+
+  async function onDeletePhoto(photoId: string) {
+    await deleteGalleryPhoto(photoId);
+    setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+  }
 
   async function onToggleWalker(value: boolean) {
     setWalkerBusy(true);
@@ -121,6 +146,13 @@ export default function Home() {
             />
           </View>
 
+          {!incomplete && (
+            <View style={[styles.photosCard, shadow.card]}>
+              <Text style={styles.photosTitle}>התמונות שלי 📸</Text>
+              <PhotoGallery photos={photos} editable busy={photosBusy} onAdd={onAddPhotos} onDelete={onDeletePhoto} />
+            </View>
+          )}
+
           <View style={styles.dogsHeader}>
             <Text style={styles.dogsTitle}>{t('profile.myDogs')}</Text>
             <Pressable testID="add-dog" onPress={() => router.push('/(app)/dog/new')} style={styles.addBtn}>
@@ -173,6 +205,8 @@ const styles = StyleSheet.create({
   walkerText: { flex: 1 },
   walkerTitle: { fontFamily: font.bold, fontSize: 15, color: colors.bark, textAlign: 'right' },
   walkerSub: { fontFamily: font.regular, fontSize: 12, color: colors.caramel, textAlign: 'right', marginTop: 2 },
+  photosCard: { backgroundColor: colors.white, borderRadius: radius.lg, padding: 16, borderWidth: 1, borderColor: colors.line },
+  photosTitle: { fontFamily: font.bold, fontSize: 15, color: colors.bark, textAlign: 'right', marginBottom: 8 },
 
   dogsHeader: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
   dogsTitle: { fontFamily: font.black, fontSize: 18, color: colors.bark },

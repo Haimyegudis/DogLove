@@ -9,4 +9,5 @@ export interface FeedPost {
   dog_name: string | null;
   reaction_count: number;
   my_reaction: string | null;
+  distance_m?: number | null;
 }
