@@ -45,34 +45,44 @@ function buildOQL(kind: PlaceKind, radiusM: number, lat: number, lng: number): s
 // Public Overpass mirrors, tried in order. The main overpass-api.de host often
 // rate-limits or rejects mobile requests (429/406/504), so we fall back across
 // several mirrors and use whichever answers first.
+// Public Overpass mirrors, tried in order until one returns DATA. The main
+// overpass-api.de host works from normal mobile/residential networks; the
+// others are fallbacks for when it is busy.
 const OVERPASS_MIRRORS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
   'https://overpass.osm.ch/api/interpreter',
-  'https://overpass-api.de/api/interpreter',
 ];
 
 async function fetchOverpass(oql: string): Promise<any[]> {
   const body = 'data=' + encodeURIComponent(oql);
   let lastErr = '';
+  let sawEmpty = false;
   for (const url of OVERPASS_MIRRORS) {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const timer = setTimeout(() => ctrl.abort(), 12000);
     try {
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
         body,
         signal: ctrl.signal,
       });
       clearTimeout(timer);
       if (!res.ok) { lastErr = `שגיאת שרת: ${res.status}`; continue; }
       const json = await res.json();
-      return json?.elements ?? [];
+      const els: any[] = json?.elements ?? [];
+      // A mirror can answer 200 with an empty list while another mirror has
+      // the data — don't let an empty answer mask the others.
+      if (els.length > 0) return els;
+      sawEmpty = true;
     } catch (err: unknown) {
       clearTimeout(timer);
       lastErr = err instanceof Error ? err.message : 'שגיאה לא ידועה';
     }
   }
+  if (sawEmpty) return []; // every reachable mirror genuinely had nothing
   throw new Error(lastErr || 'כל השרתים לא זמינים כרגע');
 }
 

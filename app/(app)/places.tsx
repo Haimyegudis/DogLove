@@ -47,6 +47,8 @@ const KINDS: KindConfig[] = [
   { kind: 'petshop', label: 'חנויות', emoji: '🛒', color: colors.purple, softColor: colors.purpleSoft },
 ];
 
+const RADII_KM = [5, 10, 25, 50];
+
 // ── Place card ─────────────────────────────────────────────────────────────
 interface PlaceCardProps {
   place: Place;
@@ -82,6 +84,7 @@ function PlaceCard({ place, userLat, userLng, kindConfig }: PlaceCardProps) {
 // ── Screen ─────────────────────────────────────────────────────────────────
 export default function PlacesScreen() {
   const [activeKind, setActiveKind] = useState<PlaceKind>('vet');
+  const [radiusKm, setRadiusKm] = useState(10);
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +94,7 @@ export default function PlacesScreen() {
   const kindConfig = KINDS.find((k) => k.kind === activeKind) ?? KINDS[0];
 
   const load = useCallback(
-    async (kind: PlaceKind) => {
+    async (kind: PlaceKind, km: number) => {
       setLoading(true);
       setError(null);
       setPlaces([]);
@@ -104,11 +107,17 @@ export default function PlacesScreen() {
         setUserLat(coords.lat);
         setUserLng(coords.lng);
 
-        const { data, error: fetchErr } = await nearbyPlaces(coords.lat, coords.lng, kind);
+        const { data, error: fetchErr } = await nearbyPlaces(coords.lat, coords.lng, kind, km * 1000);
         if (fetchErr) {
           setError(fetchErr);
         } else {
-          setPlaces(data);
+          // Nearest first.
+          const sorted = [...data].sort(
+            (a, b) =>
+              haversineKm(coords.lat, coords.lng, a.lat, a.lng) -
+              haversineKm(coords.lat, coords.lng, b.lat, b.lng),
+          );
+          setPlaces(sorted);
         }
       } finally {
         setLoading(false);
@@ -119,13 +128,18 @@ export default function PlacesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      load(activeKind);
-    }, [load, activeKind]),
+      load(activeKind, radiusKm);
+    }, [load, activeKind, radiusKm]),
   );
 
   const handleKindChange = (kind: PlaceKind) => {
     setActiveKind(kind);
-    load(kind);
+    load(kind, radiusKm);
+  };
+
+  const handleRadiusChange = (km: number) => {
+    setRadiusKm(km);
+    load(activeKind, km);
   };
 
   return (
@@ -167,6 +181,19 @@ export default function PlacesScreen() {
         </ScrollView>
       </View>
 
+      {/* Radius selector */}
+      <View style={styles.radiusRow}>
+        <Text style={styles.radiusLabel}>טווח:</Text>
+        {RADII_KM.map((km) => {
+          const on = km === radiusKm;
+          return (
+            <Pressable key={km} onPress={() => handleRadiusChange(km)} style={[styles.radiusChip, on && { backgroundColor: kindConfig.color, borderColor: kindConfig.color }]}>
+              <Text style={[styles.radiusChipText, on && { color: colors.white }]}>{km} ק"מ</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       {/* Content */}
       {loading ? (
         <View style={styles.center}>
@@ -176,7 +203,7 @@ export default function PlacesScreen() {
       ) : error ? (
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={[styles.retryBtn, { backgroundColor: kindConfig.color }]} onPress={() => load(activeKind)}>
+          <Pressable style={[styles.retryBtn, { backgroundColor: kindConfig.color }]} onPress={() => load(activeKind, radiusKm)}>
             <Text style={styles.retryBtnText}>נסה שוב</Text>
           </Pressable>
         </View>
@@ -198,7 +225,7 @@ export default function PlacesScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              {`לא נמצאו ${kindConfig.label} בקרבתך 🐾`}
+              {`לא נמצאו ${kindConfig.label} ברדיוס ${radiusKm} ק"מ. נסה טווח גדול יותר 🐾`}
             </Text>
           }
         />
@@ -233,6 +260,11 @@ const styles = StyleSheet.create({
     fontFamily: font.medium,
     fontSize: 14,
   },
+
+  radiusRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.lineCool },
+  radiusLabel: { fontFamily: font.medium, fontSize: 13, color: colors.inkCoolSoft },
+  radiusChip: { borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.lineCool, paddingVertical: 5, paddingHorizontal: 12 },
+  radiusChipText: { fontFamily: font.medium, fontSize: 13, color: colors.inkCoolSoft },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   loadingText: { fontFamily: font.regular, color: colors.inkCoolSoft, fontSize: 15 },
