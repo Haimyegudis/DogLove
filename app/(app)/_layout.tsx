@@ -34,6 +34,8 @@ export default function AppLayout() {
       <Stack.Screen name="calendar" options={{ title: 'יומן' }} />
       <Stack.Screen name="privacy" options={{ title: 'פרטיות' }} />
       <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="feed" options={{ title: 'גלריה' }} />
+      <Stack.Screen name="new-post" options={{ title: 'שיתוף תמונה' }} />
     </Stack>
   );
 }

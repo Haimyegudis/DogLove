@@ -77,6 +77,7 @@ export default function Home() {
             <Feature title="מצא חבר" sub="בקשות משחק לכלב שלך" bg={colors.roseSoft} icon="❤️" onPress={() => router.push('/(app)/(tabs)/playdates')} />
             <Feature title="חיפוש" sub="כלבים לפי סוג, בעלים" bg={colors.purpleSoft} icon="🔎" onPress={() => router.push('/(app)/search')} />
             <Feature title="יומן" sub="מפגשים מתוכננים" bg={colors.purpleSoft} icon="📅" onPress={() => router.push('/(app)/calendar')} />
+            <Feature title="גלריה" sub="תמונות של כלבים" bg={colors.purpleSoft} icon="📸" onPress={() => router.push('/(app)/feed')} />
           </View>
         </ScrollView>
       </SafeAreaView>
