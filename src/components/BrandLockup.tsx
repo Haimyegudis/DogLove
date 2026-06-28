@@ -19,8 +19,8 @@ export default function BrandLockup({ size = 36, onLight = true }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
-  kelev: { fontFamily: font.black },
-  love: { fontFamily: font.black, color: colors.rose },
+  kelev: { fontFamily: font.display },
+  love: { fontFamily: font.display, color: colors.rose },
   badge: {
     backgroundColor: colors.roseSoft,
     alignItems: 'center',

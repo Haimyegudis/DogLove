@@ -52,7 +52,7 @@ export default function AppLayout() {
         headerShown: true,
         headerStyle: { backgroundColor: colors.bgApp },
         headerTintColor: colors.rose,
-        headerTitleStyle: { fontFamily: font.bold, color: colors.brandDark },
+        headerTitleStyle: { fontFamily: font.display, color: colors.brandDark, fontSize: 18 },
         headerShadowVisible: false,
         headerBackTitle: 'חזרה',
         title: '',

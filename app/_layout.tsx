@@ -4,11 +4,12 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
-  Rubik_400Regular,
-  Rubik_500Medium,
-  Rubik_700Bold,
-  Rubik_800ExtraBold,
-} from '@expo-google-fonts/rubik';
+  Heebo_400Regular,
+  Heebo_500Medium,
+  Heebo_700Bold,
+  Heebo_800ExtraBold,
+} from '@expo-google-fonts/heebo';
+import { SuezOne_400Regular } from '@expo-google-fonts/suez-one';
 import { AuthProvider } from '../src/state/AuthContext';
 import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { ToastProvider } from '../src/components/Toast';
@@ -23,10 +24,11 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Rubik_400Regular,
-    Rubik_500Medium,
-    Rubik_700Bold,
-    Rubik_800ExtraBold,
+    Heebo_400Regular,
+    Heebo_500Medium,
+    Heebo_700Bold,
+    Heebo_800ExtraBold,
+    SuezOne_400Regular,
   });
 
   useEffect(() => {

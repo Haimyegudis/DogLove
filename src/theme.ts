@@ -1,84 +1,95 @@
 // כלב LOVE — "Golden-Hour Dog Park" design system.
-// Warm, friendly, dog-park-at-sunset palette with soft pillowy surfaces.
+// Warm bone paper, sunset coral + raspberry love + leaf-green community, honey
+// highlights, deep espresso ink. Tactile sticker-cards with a warm offset shadow.
+// A characterful Hebrew display serif (Suez One) over a clean body (Heebo).
+//
+// Token NAMES are kept stable (legacy warm + cool sets both map here) so the
+// whole app re-skins from this one file. New: `font.display`, `colors.gold`.
 
 export const colors = {
-  // Unified on the cool "Pastel Pup" palette: the legacy warm tokens below now
-  // point at their cool equivalents so every screen reads as one design system.
-  cream: '#F4F5FB',        // app background (was warm cream)
-  creamDeep: '#ECEAF8',
-  peach: '#E3DEFA',
+  // --- Warm paper surfaces ---
+  cream: '#FBF5EA',        // app background (warm bone)
+  creamDeep: '#F3E7D2',
+  peach: '#FCE8D6',
 
-  // Primary — now rose (was sunset coral)
-  coral: '#FF5E8A',
-  coralDeep: '#E8455F',
-  coralSoft: '#FFE1EC',
+  // Primary energy — sunset coral (CTAs, walk/adventure)
+  coral: '#FF6A3D',
+  coralDeep: '#E8502A',
+  coralSoft: '#FFE3D6',
 
-  // Grounding text (was caramel/bark)
-  caramel: '#6E6C8A',
-  bark: '#2D2A4A',
+  // Grounding text (warm espresso)
+  caramel: '#7A6A5E',
+  bark: '#2E211A',
 
-  // Heart accent in the wordmark
-  heart: '#E8455F',
+  // Love accent in the wordmark
+  heart: '#FF5D73',
 
-  // Sky pop (links, small accents)
-  sky: '#2BA7B0',
+  // Link / small pop — warm teal
+  sky: '#2B8C8C',
 
-  // Neutrals
-  ink: '#3A3950',
-  inkSoft: '#8E8DA8',
+  // Neutrals (warm)
+  ink: '#3A2E27',
+  inkSoft: '#9A8B80',
   white: '#FFFFFF',
-  line: '#E9E9F3',
+  line: '#ECE0CF',
   danger: '#D7443E',
 
-  // --- "Pastel Pup Dashboard" tokens (aligned to the reference mockup) ---
-  bgApp: '#F4F5FB',        // cool light app background
-  brandDark: '#2D2A4A',    // "כלב" wordmark + headings on light bg
-  rose: '#FF5E8A',         // the "love" accent / primary pink
-  roseSoft: '#FFE1EC',
-  purple: '#7C5CE6',
-  purpleSoft: '#EAE4FF',
-  green: '#22C28B',
-  greenSoft: '#D6F7EC',
-  lineCool: '#E9E9F3',     // hairline on the cool background
-  inkCool: '#3A3950',      // body text on light bg
-  inkCoolSoft: '#8E8DA8',  // secondary text on light bg
+  // Honey highlight
+  gold: '#E8992B',
+  goldSoft: '#FBE9CC',
+
+  // --- Dashboard / "cool" token set, remapped onto the warm palette ---
+  bgApp: '#FBF5EA',
+  brandDark: '#2E211A',    // wordmark + headings
+  rose: '#FF5D73',         // the "love" accent / dating
+  roseSoft: '#FFE0E3',
+  purple: '#E8992B',       // honey (info/search cards)
+  purpleSoft: '#FBE9CC',
+  green: '#2F7A52',        // leaf (community/walks)
+  greenSoft: '#DCEFE1',
+  lineCool: '#ECE0CF',     // warm hairline
+  inkCool: '#3A2E27',      // body text
+  inkCoolSoft: '#9A8B80',  // secondary text
 };
 
 // Gradients (consumed by expo-linear-gradient `colors` prop).
 export const gradients = {
-  hero: ['#7C5CE6', '#FF6FA5', '#FFB06B'] as const,    // purple → pink → peach
-  rose: ['#FF6FA5', '#FF5E8A'] as const,
+  hero: ['#FFB23E', '#FF6A3D', '#FF5D73'] as const,    // golden hour: gold → coral → raspberry
+  rose: ['#FF6A3D', '#FF5D73'] as const,
+  green: ['#3E9B6A', '#2F7A52'] as const,
 };
 
 export const font = {
-  // Rubik — rounded, friendly, supports Hebrew + Latin
-  regular: 'Rubik_400Regular',
-  medium: 'Rubik_500Medium',
-  bold: 'Rubik_700Bold',
-  black: 'Rubik_800ExtraBold',
+  // Body — Heebo (clean, Hebrew + Latin)
+  regular: 'Heebo_400Regular',
+  medium: 'Heebo_500Medium',
+  bold: 'Heebo_700Bold',
+  black: 'Heebo_800ExtraBold',
+  // Display — Suez One (characterful Hebrew serif, for brand/hero/section)
+  display: 'SuezOne_400Regular',
 };
 
 export const radius = {
   sm: 12,
-  md: 18,
-  lg: 26,
+  md: 16,
+  lg: 22,
   pill: 999,
 };
 
 export const shadow = {
-  // Soft, cool-tinted lift for the pillowy button/card feel
+  // Tactile, warm offset lift (sticker-card feel)
   soft: {
-    shadowColor: '#6E6AA8',
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+    shadowColor: '#6B4A2E',
+    shadowOpacity: 0.20,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
     elevation: 6,
   },
   card: {
-    shadowColor: '#6E6AA8',
-    shadowOpacity: 0.12,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
+    shadowColor: '#6B4A2E',
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 9 },
     elevation: 4,
   },
 };

@@ -60,6 +60,9 @@ export default function Home() {
           </View>
 
           <LinearGradient colors={gradients.hero as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+            <Text style={styles.heroPaws}>🐾</Text>
+            <Text style={styles.heroPaws2}>🐾</Text>
+            <Text style={styles.heroKicker}>שעת הזהב בפארק</Text>
             <Text style={styles.heroTitle}>{t('home.heroTitle')}</Text>
             <Text style={styles.heroSub}>{t('home.heroSub')}</Text>
             <Pressable style={styles.heroBtn} onPress={() => router.push('/(app)/(tabs)/map')}>
@@ -104,11 +107,14 @@ const styles = StyleSheet.create({
   topbar: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.roseSoft, alignItems: 'center', justifyContent: 'center' },
 
-  hero: { borderRadius: 24, padding: 22, gap: 8 },
-  heroTitle: { fontFamily: font.black, fontSize: 22, color: colors.white, textAlign: 'right' },
-  heroSub: { fontFamily: font.medium, fontSize: 14, color: 'rgba(255,255,255,0.92)', textAlign: 'right' },
-  heroBtn: { alignSelf: 'flex-start', backgroundColor: colors.white, borderRadius: 999, paddingVertical: 11, paddingHorizontal: 18, marginTop: 8 },
-  heroBtnText: { fontFamily: font.bold, color: colors.purple, fontSize: 14 },
+  hero: { borderRadius: 26, padding: 24, gap: 6, overflow: 'hidden' },
+  heroPaws: { position: 'absolute', top: -10, left: -6, fontSize: 90, opacity: 0.14, transform: [{ rotate: '-18deg' }] },
+  heroPaws2: { position: 'absolute', bottom: -18, left: 64, fontSize: 56, opacity: 0.12, transform: [{ rotate: '12deg' }] },
+  heroKicker: { fontFamily: font.bold, fontSize: 12, letterSpacing: 1, color: 'rgba(255,255,255,0.85)', textAlign: 'right' },
+  heroTitle: { fontFamily: font.display, fontSize: 27, lineHeight: 34, color: colors.white, textAlign: 'right' },
+  heroSub: { fontFamily: font.medium, fontSize: 14, color: 'rgba(255,255,255,0.94)', textAlign: 'right', marginTop: 2 },
+  heroBtn: { alignSelf: 'flex-start', backgroundColor: colors.white, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20, marginTop: 12 },
+  heroBtnText: { fontFamily: font.bold, color: colors.coralDeep, fontSize: 14 },
 
   statsRow: { flexDirection: 'row-reverse', gap: 10 },
   stat: { flex: 1, backgroundColor: colors.white, borderRadius: 18, paddingVertical: 14, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.lineCool },
@@ -116,7 +122,7 @@ const styles = StyleSheet.create({
   statN: { fontFamily: font.black, fontSize: 22 },
   statLabel: { fontFamily: font.regular, fontSize: 11, color: colors.inkCoolSoft, textAlign: 'center' },
 
-  section: { fontFamily: font.black, fontSize: 17, color: colors.brandDark, textAlign: 'right', marginTop: 4 },
+  section: { fontFamily: font.display, fontSize: 19, color: colors.brandDark, textAlign: 'right', marginTop: 4 },
   grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 12 },
   feature: { width: '31%', aspectRatio: 1, backgroundColor: colors.white, borderRadius: 20, padding: 11, gap: 5, justifyContent: 'center', borderWidth: 1, borderColor: colors.lineCool },
   featureIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
