@@ -108,7 +108,7 @@ language sql stable security definer set search_path = public as $$
     (select count(*) from w),
     (select coalesce(sum(extract(epoch from (ended_at - started_at))/60), 0)::bigint from w where started_at is not null),
     (select count(*) from w where ended_at > now() - interval '7 days'),
-    (select round(coalesce(sum(distance_m), 0)/1000.0, 1) from w),
+    (select round((coalesce(sum(distance_m), 0)/1000.0)::numeric, 1) from w),
     (select count(*)::int from days where d > current_date - interval '30 days'); -- simple active-days proxy
 $$;
 
