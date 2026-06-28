@@ -7,8 +7,13 @@ const config = {
   scheme: 'doglove',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
+  icon: './assets/icon.png',
   android: {
     package: 'com.doglove.app',
+    adaptiveIcon: {
+      foregroundImage: './assets/adaptive-icon.png',
+      backgroundColor: '#FFE1EC',
+    },
   },
   plugins: [
     'expo-router',
