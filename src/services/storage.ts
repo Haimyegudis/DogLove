@@ -2,9 +2,13 @@ import { supabase } from '../lib/supabase';
 
 type Bucket = 'avatars' | 'dog-photos';
 
-// `now` is injectable so tests are deterministic; production callers omit it.
-export async function uploadImage(bucket: Bucket, userId: string, uri: string, now = Date.now()) {
-  const path = `${userId}/${now}.jpg`;
+// `now`/`rand` are injectable so tests are deterministic; production omits them.
+// The random suffix makes the public storage URL effectively unguessable.
+export async function uploadImage(
+  bucket: Bucket, userId: string, uri: string,
+  now = Date.now(), rand = Math.random().toString(36).slice(2, 10),
+) {
+  const path = `${userId}/${now}-${rand}.jpg`;
   const arrayBuffer = await fetch(uri).then((r) => r.arrayBuffer());
   const { error } = await supabase.storage
     .from(bucket)

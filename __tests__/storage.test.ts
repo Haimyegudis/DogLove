@@ -14,9 +14,9 @@ beforeEach(() => {
 test('uploads to <userId>/<now>.jpg and returns public url', async () => {
   mockUpload.mockResolvedValue({ error: null });
   mockGetPublicUrl.mockReturnValue({ data: { publicUrl: 'https://cdn/avatars/u1/123.jpg' } });
-  const res = await uploadImage('avatars', 'u1', 'file:///tmp/pic.jpg', 123);
+  const res = await uploadImage('avatars', 'u1', 'file:///tmp/pic.jpg', 123, 'r4nd');
   expect(global.fetch).toHaveBeenCalledWith('file:///tmp/pic.jpg');
-  expect(mockUpload).toHaveBeenCalledWith('u1/123.jpg', expect.any(ArrayBuffer), {
+  expect(mockUpload).toHaveBeenCalledWith('u1/123-r4nd.jpg', expect.any(ArrayBuffer), {
     contentType: 'image/jpeg', upsert: true,
   });
   expect(res.url).toBe('https://cdn/avatars/u1/123.jpg');

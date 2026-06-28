@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../../src/state/AuthContext';
@@ -10,6 +10,9 @@ import { rateUser } from '../../../src/services/ratings';
 import { colors, font, radius } from '../../../src/theme';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { otherInConversation, schedulePlaydate } from '../../../src/services/playdates';
+import MapPicker from '../../../src/components/MapPicker';
+import { getCurrentCoords } from '../../../src/services/location';
+import type { Coords } from '../../../src/types/walk';
 
 export default function Chat() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -20,6 +23,9 @@ export default function Chat() {
   const [text, setText] = useState('');
   const [showDate, setShowDate] = useState(false);
   const [pickedDate, setPickedDate] = useState<Date | null>(null);
+  const [showMeetup, setShowMeetup] = useState(false);
+  const [meetupCoords, setMeetupCoords] = useState<Coords | null>(null);
+  const [currentCoords, setCurrentCoords] = useState<Coords | null>(null);
 
   async function finishSchedule(d: Date, place: string) {
     const { data: otherId, error: e1 } = await otherInConversation(id);
@@ -120,6 +126,22 @@ export default function Chat() {
     }
   }
 
+  async function openMeetup() {
+    const coords = await getCurrentCoords();
+    setCurrentCoords(coords);
+    setMeetupCoords(coords);
+    setShowMeetup(true);
+  }
+
+  async function sendMeetupLocation() {
+    if (!meetupCoords) { Alert.alert('בחר מיקום', 'יש לסמן מיקום על המפה תחילה.'); return; }
+    const { lat, lng } = meetupCoords;
+    const body = `📍 הצעת מקום מפגש: https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
+    const { error } = await sendMessage(id, userId, body);
+    if (error) { Alert.alert('שליחה נכשלה', error); return; }
+    setShowMeetup(false);
+  }
+
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe}>
@@ -184,6 +206,9 @@ export default function Chat() {
             }}
           />
           <View style={styles.composer}>
+            <Pressable onPress={openMeetup} style={styles.meetupBtn}>
+              <Text style={styles.meetupBtnText}>📍 הצע מקום מפגש</Text>
+            </Pressable>
             <TextInput
               style={styles.input}
               placeholder="הודעה…"
@@ -196,6 +221,24 @@ export default function Chat() {
               <Text style={styles.sendText}>שלח</Text>
             </Pressable>
           </View>
+
+          <Modal visible={showMeetup} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowMeetup(false)}>
+            <SafeAreaView style={styles.modalSafe}>
+              <View style={styles.modalHeader}>
+                <Pressable onPress={() => setShowMeetup(false)} style={styles.modalCancelBtn}>
+                  <Text style={styles.modalCancelText}>ביטול</Text>
+                </Pressable>
+                <Text style={styles.modalTitle}>📍 בחר מקום מפגש</Text>
+                <View style={styles.modalCancelBtn} />
+              </View>
+              <MapPicker initial={currentCoords} onPick={(c) => setMeetupCoords(c)} />
+              <View style={styles.modalFooter}>
+                <Pressable onPress={sendMeetupLocation} style={[styles.send, styles.sendFullWidth]}>
+                  <Text style={styles.sendText}>שלח מיקום</Text>
+                </Pressable>
+              </View>
+            </SafeAreaView>
+          </Modal>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
@@ -235,4 +278,13 @@ const styles = StyleSheet.create({
   confirmPickerText: { fontFamily: font.bold, color: colors.white, fontSize: 15 },
   cancelPickerBtn: { paddingVertical: 8, paddingHorizontal: 12 },
   cancelPickerText: { fontFamily: font.regular, color: colors.inkCool, fontSize: 15 },
+  meetupBtn: { paddingHorizontal: 10, paddingVertical: 8, justifyContent: 'center' },
+  meetupBtnText: { fontFamily: font.regular, fontSize: 13, color: colors.brandDark, textAlign: 'right' },
+  modalSafe: { flex: 1, backgroundColor: colors.bgApp },
+  modalHeader: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', height: 50, paddingHorizontal: 12, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.lineCool },
+  modalTitle: { fontFamily: font.bold, fontSize: 16, color: colors.brandDark, textAlign: 'center', flex: 1 },
+  modalCancelBtn: { width: 60, paddingVertical: 8 },
+  modalCancelText: { fontFamily: font.regular, fontSize: 15, color: colors.rose, textAlign: 'left' },
+  modalFooter: { padding: 16, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.lineCool },
+  sendFullWidth: { alignItems: 'center', paddingVertical: 14 },
 });

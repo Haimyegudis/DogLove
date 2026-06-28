@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Text, StyleSheet, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DogParkBackground from '../../src/components/DogParkBackground';
@@ -29,23 +29,26 @@ export default function ActiveWalkers() {
   return (
     <DogParkBackground>
       <SafeAreaView style={styles.safe}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Text style={styles.title}>מטיילים פעילים עכשיו 🐾</Text>
-          {walkers.length === 0 ? (
-            <Text style={styles.empty}>אף אחד לא בטיול כרגע. תהיה הראשון! 🦮</Text>
-          ) : (
-            walkers.map((w) => (
-              <DogCard
-                key={w.dog_id}
-                photo={w.photo_url}
-                name={w.name}
-                breed={w.breed}
-                subtitle={`${w.owner_name ?? ''} · ${sinceLabel(w.started_at)}`}
-                onPress={() => router.push(`/(app)/request/${w.dog_id}`)}
-              />
-            ))
+        <FlatList
+          data={walkers}
+          keyExtractor={(item) => item.dog_id}
+          renderItem={({ item: w }) => (
+            <DogCard
+              photo={w.photo_url}
+              name={w.name}
+              breed={w.breed}
+              subtitle={`${w.owner_name ?? ''} · ${sinceLabel(w.started_at)}`}
+              onPress={() => router.push(`/(app)/request/${w.dog_id}`)}
+            />
           )}
-        </ScrollView>
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          windowSize={7}
+          removeClippedSubviews
+          ListHeaderComponent={<Text style={styles.title}>מטיילים פעילים עכשיו 🐾</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>אף אחד לא בטיול כרגע. תהיה הראשון! 🦮</Text>}
+        />
       </SafeAreaView>
     </DogParkBackground>
   );

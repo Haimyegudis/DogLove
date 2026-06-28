@@ -17,6 +17,12 @@ test('searchDogs calls search_dogs with query', async () => {
 
 test('searchUsers calls search_users with name query and filters', async () => {
   rpc.mockResolvedValue({ data: [], error: null });
-  await searchUsers('דנה', 'female', 18, 40);
-  expect(rpc).toHaveBeenCalledWith('search_users', { p_q: 'דנה', p_gender: 'female', p_min_age: 18, p_max_age: 40, p_city: '' });
+  await searchUsers('דנה', 'female', 18, 40, '', ['dates']);
+  expect(rpc).toHaveBeenCalledWith('search_users', { p_q: 'דנה', p_gender: 'female', p_min_age: 18, p_max_age: 40, p_city: '', p_intent: ['dates'] });
+});
+
+test('searchUsers sends null intent when none selected', async () => {
+  rpc.mockResolvedValue({ data: [], error: null });
+  await searchUsers('דנה', null, 18, 99);
+  expect(rpc).toHaveBeenCalledWith('search_users', { p_q: 'דנה', p_gender: null, p_min_age: 18, p_max_age: 99, p_city: '', p_intent: null });
 });

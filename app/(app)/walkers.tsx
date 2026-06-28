@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { colors, font, radius } from '../../src/theme';
 import { nearbyWalkers, startConversation } from '../../src/services/walkers';
@@ -104,33 +104,39 @@ export default function Walkers() {
           <ActivityIndicator color={colors.rose} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {walkers.length === 0 ? (
+        <FlatList
+          data={walkers}
+          keyExtractor={(item) => item.user_id}
+          renderItem={({ item: walker }) => (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Avatar uri={walker.photo_url} fallback="🦮" size={56} />
+                <View style={styles.cardInfo}>
+                  <Text style={styles.name}>{walker.display_name}</Text>
+                  <Text style={styles.cityText}>
+                    📍 {walker.distance_m != null ? `${(walker.distance_m / 1000).toFixed(1)} ק״מ ממך` : (walker.city ?? '')}
+                  </Text>
+                  <Text style={styles.rating}>
+                    {walker.rating_count > 0 ? `⭐ ${walker.avg_stars} (${walker.rating_count})` : 'חדש'}
+                  </Text>
+                </View>
+              </View>
+              <Pressable style={styles.msgBtn} onPress={() => handleMessage(walker)}>
+                <Text style={styles.msgBtnText}>שלח הודעה 💬</Text>
+              </Pressable>
+            </View>
+          )}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          windowSize={7}
+          removeClippedSubviews
+          ListEmptyComponent={
             <Text style={styles.empty}>
               {searched ? 'אין מטיילים בטווח שבחרת. נסה מרחק גדול יותר.' : 'בחר מיקום כדי למצוא מטיילים קרובים.'}
             </Text>
-          ) : (
-            walkers.map((walker) => (
-              <View key={walker.user_id} style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Avatar uri={walker.photo_url} fallback="🦮" size={56} />
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.name}>{walker.display_name}</Text>
-                    <Text style={styles.cityText}>
-                      📍 {walker.distance_m != null ? `${(walker.distance_m / 1000).toFixed(1)} ק״מ ממך` : (walker.city ?? '')}
-                    </Text>
-                    <Text style={styles.rating}>
-                      {walker.rating_count > 0 ? `⭐ ${walker.avg_stars} (${walker.rating_count})` : 'חדש'}
-                    </Text>
-                  </View>
-                </View>
-                <Pressable style={styles.msgBtn} onPress={() => handleMessage(walker)}>
-                  <Text style={styles.msgBtnText}>שלח הודעה 💬</Text>
-                </Pressable>
-              </View>
-            ))
-          )}
-        </ScrollView>
+          }
+        />
       )}
     </View>
   );

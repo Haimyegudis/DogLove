@@ -9,6 +9,7 @@ import CompatibilityBadge from '../../../src/components/CompatibilityBadge';
 import { getDogCard, listMyDogs, type DogCard } from '../../../src/services/dogs';
 import { listDogPhotos, type GalleryPhoto } from '../../../src/services/gallery';
 import { startConversation } from '../../../src/services/walkers';
+import { blockUser, reportUser } from '../../../src/services/safety';
 import { useAuth } from '../../../src/state/AuthContext';
 import { SIZE_OPTIONS, DOG_GENDER_OPTIONS } from '../../../src/types/profile';
 import { colors, font, radius, shadow } from '../../../src/theme';
@@ -46,6 +47,30 @@ export default function DogView() {
     router.push(`/(app)/chat/${data}?name=${encodeURIComponent(card.owner_name ?? 'בעלים')}`);
   }, [card, router]);
 
+  function onBlockReport() {
+    if (!card) return;
+    const ownerId = card.owner_id;
+    Alert.alert('דיווח / חסימה', undefined, [
+      {
+        text: 'דווח 🚩',
+        onPress: async () => {
+          const { error } = await reportUser(userId, ownerId, 'דווח מדף כלב');
+          Alert.alert(error ? 'שגיאה' : 'תודה', error || 'הדיווח התקבל');
+        },
+      },
+      {
+        text: 'חסום 🚫',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await blockUser(userId, ownerId);
+          if (error) { Alert.alert('שגיאה', error); return; }
+          router.back();
+        },
+      },
+      { text: 'ביטול', style: 'cancel' },
+    ]);
+  }
+
   if (loading) return <View style={styles.screen}><Stack.Screen options={{ title: 'כלב' }} /></View>;
   if (!card) return (
     <View style={styles.screen}>
@@ -80,6 +105,10 @@ export default function DogView() {
           <Pressable style={styles.msgBtn} onPress={onMessage}>
             <Text style={styles.msgBtnText}>שלח הודעה 💬</Text>
           </Pressable>
+
+          <Pressable style={styles.reportBtn} onPress={onBlockReport}>
+            <Text style={styles.reportBtnText}>דיווח / חסימה 🚫</Text>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -100,4 +129,6 @@ const styles = StyleSheet.create({
   msgBtn: { backgroundColor: colors.rose, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center' },
   msgBtnText: { fontFamily: font.black, fontSize: 16, color: colors.white },
   empty: { fontFamily: font.regular, color: colors.inkCoolSoft, textAlign: 'center', marginTop: 40 },
+  reportBtn: { alignItems: 'center', paddingVertical: 10 },
+  reportBtnText: { fontFamily: font.regular, fontSize: 14, color: colors.inkCoolSoft },
 });

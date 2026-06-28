@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
@@ -45,7 +46,9 @@ function PostCard({ post, userId, onReact }: PostCardProps) {
       <Image
         source={{ uri: post.photo_url }}
         style={styles.photo}
-        resizeMode="cover"
+        contentFit="cover"
+        transition={150}
+        cachePolicy="memory-disk"
       />
 
       {/* Caption */}
@@ -144,6 +147,9 @@ export default function Feed() {
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={6}
+          windowSize={7}
+          removeClippedSubviews
           ListEmptyComponent={
             <Text style={styles.empty}>
               עדיין אין תמונות. היה הראשון לשתף! 📸
