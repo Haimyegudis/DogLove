@@ -8,6 +8,7 @@ import Avatar from '../../../src/components/Avatar';
 import VerifiedBadge from '../../../src/components/VerifiedBadge';
 import { PremiumBadge } from '../../../src/components/PremiumBadge';
 import { useAuth } from '../../../src/state/AuthContext';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import { getMyProfile } from '../../../src/services/profile';
 import { amIPremium } from '../../../src/services/premium';
 import { listMyDogs } from '../../../src/services/dogs';
@@ -20,6 +21,7 @@ const genderLabel = (g: OwnerProfile['gender']) => GENDER_OPTIONS.find((o) => o.
 export default function Home() {
   const router = useRouter();
   const { session, signOut } = useAuth();
+  const { t } = useI18n();
   const userId = session!.user.id;
   const [profile, setProfile] = useState<OwnerProfile | null>(null);
   const [dogs, setDogs] = useState<Dog[]>([]);
@@ -47,17 +49,17 @@ export default function Home() {
             <BrandLockup size={28} />
             <View style={styles.topbarActions}>
               <Pressable onPress={() => router.push('/(app)/privacy')} style={styles.privacyBtn}>
-                <Text style={styles.privacyText}>פרטיות והגדרות 🔒</Text>
+                <Text style={styles.privacyText}>{t('profile.privacy')}</Text>
               </Pressable>
-              <Pressable testID="signout-btn" onPress={signOut}><Text style={styles.signout}>התנתק</Text></Pressable>
+              <Pressable testID="signout-btn" onPress={signOut}><Text style={styles.signout}>{t('profile.signOut')}</Text></Pressable>
             </View>
           </View>
 
           {incomplete ? (
             <Pressable onPress={() => router.push('/(app)/edit-profile')} style={[styles.completeCard, shadow.card]}>
               <Text style={styles.completeEmoji}>👋</Text>
-              <Text style={styles.completeTitle}>בוא נשלים את הפרופיל</Text>
-              <Text style={styles.completeSub}>שם, תמונה ותאריך לידה — ויוצאים לדרך</Text>
+              <Text style={styles.completeTitle}>{t('profile.completeTitle')}</Text>
+              <Text style={styles.completeSub}>{t('profile.completeSub')}</Text>
             </Pressable>
           ) : (
             <Pressable onPress={() => router.push('/(app)/edit-profile')} style={[styles.ownerCard, shadow.card]}>
@@ -68,7 +70,7 @@ export default function Home() {
                   {ageFromISO(profile!.date_of_birth!, utcToday)} · {genderLabel(profile!.gender)}
                 </Text>
               </View>
-              <Text style={styles.edit}>עריכה ✏️</Text>
+              <Text style={styles.edit}>{t('profile.edit')}</Text>
             </Pressable>
           )}
 
@@ -76,19 +78,19 @@ export default function Home() {
             <Pressable onPress={() => router.push('/(app)/premium')} style={styles.badgeRow}>
               <VerifiedBadge userId={userId} />
               <PremiumBadge premium={premium} />
-              {!premium ? <Text style={styles.upgradeHint}>שדרג ל-Premium ⭐</Text> : null}
+              {!premium ? <Text style={styles.upgradeHint}>{t('profile.upgradeHint')}</Text> : null}
             </Pressable>
           )}
 
           <View style={styles.dogsHeader}>
-            <Text style={styles.dogsTitle}>הכלבים שלי 🐾</Text>
+            <Text style={styles.dogsTitle}>{t('profile.myDogs')}</Text>
             <Pressable testID="add-dog" onPress={() => router.push('/(app)/dog/new')} style={styles.addBtn}>
-              <Text style={styles.addText}>+ הוסף</Text>
+              <Text style={styles.addText}>{t('profile.add')}</Text>
             </Pressable>
           </View>
 
           {dogs.length === 0 ? (
-            <Text style={styles.empty}>עדיין אין כלבים. הוסף את החבר הראשון! 🐶</Text>
+            <Text style={styles.empty}>{t('profile.noDogs')}</Text>
           ) : (
             dogs.map((d) => (
               <Pressable key={d.id} onPress={() => router.push(`/(app)/dog/${d.id}`)} style={[styles.dogCard, shadow.card]}>

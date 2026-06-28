@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/state/AuthContext';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { getDiscoverable, setDiscoverable, deleteAccount } from '../../src/services/privacy';
 import { getWalkerStatus, setWalker } from '../../src/services/walkers';
 import { colors, font, radius } from '../../src/theme';
@@ -15,6 +16,7 @@ const SHARED = [
 
 export default function Privacy() {
   const { session, signOut } = useAuth();
+  const { lang, t, setLang } = useI18n();
   const userId = session!.user.id;
   const [discoverable, setDisc] = useState(true);
   const [isWalker, setIsWalker] = useState(false);
@@ -66,6 +68,27 @@ export default function Privacy() {
                 <Text style={styles.toggleSub}>אחרים יוכלו למצוא אותך כמטייל/ת ולשלוח לך הודעה.</Text>
               </View>
             </View>
+            <View style={styles.langRow}>
+              <Text style={styles.langLabel}>{t('settings.language')} / שפה</Text>
+              <View style={styles.langChips}>
+                <Pressable
+                  onPress={() => setLang('he')}
+                  style={[styles.langChip, lang === 'he' && styles.langChipActive]}
+                >
+                  <Text style={[styles.langChipText, lang === 'he' && styles.langChipTextActive]}>
+                    {t('settings.langHe')}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setLang('en')}
+                  style={[styles.langChip, lang === 'en' && styles.langChipActive]}
+                >
+                  <Text style={[styles.langChipText, lang === 'en' && styles.langChipTextActive]}>
+                    {t('settings.langEn')}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
 
           <Text style={styles.section}>מה משותף?</Text>
@@ -98,4 +121,11 @@ const styles = StyleSheet.create({
   deleteBtn: { backgroundColor: '#FDECEC', borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: '#F3C9C9' },
   deleteText: { fontFamily: font.bold, color: colors.danger, fontSize: 15 },
   blockNote: { fontFamily: font.regular, fontSize: 12, color: colors.inkCoolSoft, textAlign: 'right', writingDirection: 'rtl' },
+  langRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 },
+  langLabel: { fontFamily: font.bold, fontSize: 15, color: colors.brandDark, textAlign: 'right' },
+  langChips: { flexDirection: 'row', gap: 8 },
+  langChip: { borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.lineCool, backgroundColor: colors.cream },
+  langChipActive: { backgroundColor: colors.purple, borderColor: colors.purple },
+  langChipText: { fontFamily: font.medium, fontSize: 13, color: colors.inkCoolSoft },
+  langChipTextActive: { color: colors.white },
 });

@@ -6,6 +6,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import BrandLockup from '../../../src/components/BrandLockup';
 import { supabase } from '../../../src/lib/supabase';
 import { listIncoming } from '../../../src/services/match';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import { colors, font, radius, gradients } from '../../../src/theme';
 
 function Stat({ n, label, tint, bg, icon }: { n: number; label: string; tint: string; bg: string; icon: string }) {
@@ -30,6 +31,7 @@ function Feature({ title, sub, bg, icon, onPress }: { title: string; sub: string
 
 export default function Home() {
   const router = useRouter();
+  const { t } = useI18n();
   const [walkers, setWalkers] = useState(0);
   const [dogs, setDogs] = useState(0);
   const [pending, setPending] = useState(0);
@@ -58,10 +60,10 @@ export default function Home() {
           </View>
 
           <LinearGradient colors={gradients.hero as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
-            <Text style={styles.heroTitle}>היי, חבר הכלבים! 🐾</Text>
-            <Text style={styles.heroSub}>בוא נמצא חברים חדשים ועוד הרפתקאות בשכונה</Text>
+            <Text style={styles.heroTitle}>{t('home.heroTitle')}</Text>
+            <Text style={styles.heroSub}>{t('home.heroSub')}</Text>
             <Pressable style={styles.heroBtn} onPress={() => router.push('/(app)/(tabs)/map')}>
-              <Text style={styles.heroBtnText}>גלה הרפתקאות חדשות! 🦮</Text>
+              <Text style={styles.heroBtnText}>{t('home.heroBtn')}</Text>
             </Pressable>
           </LinearGradient>
 
@@ -71,21 +73,21 @@ export default function Home() {
             <Stat n={pending} label="בקשות ממתינות" tint={colors.rose} bg={colors.roseSoft} icon="❤️" />
           </View>
 
-          <Text style={styles.section}>קיצורי דרך ✨</Text>
+          <Text style={styles.section}>{t('home.section')}</Text>
           <View style={styles.grid}>
-            <Feature title="צא לטיול" sub="כלבים פעילים על המפה" bg={colors.greenSoft} icon="🗺️" onPress={() => router.push('/(app)/(tabs)/map')} />
-            <Feature title="מצא חבר" sub="בקשות משחק לכלב שלך" bg={colors.roseSoft} icon="❤️" onPress={() => router.push('/(app)/(tabs)/playdates')} />
-            <Feature title="חיפוש" sub="כלבים לפי סוג, בעלים" bg={colors.purpleSoft} icon="🔎" onPress={() => router.push('/(app)/search')} />
-            <Feature title="יומן" sub="מפגשים מתוכננים" bg={colors.purpleSoft} icon="📅" onPress={() => router.push('/(app)/calendar')} />
-            <Feature title="גלריה" sub="תמונות של כלבים" bg={colors.purpleSoft} icon="📸" onPress={() => router.push('/(app)/feed')} />
-            <Feature title="כלב נעדר" sub="התראות בקהילה" bg={colors.roseSoft} icon="🚨" onPress={() => router.push('/(app)/lost-dogs')} />
-            <Feature title="טיולים קבוצתיים" sub="להיפגש בפארק" bg={colors.greenSoft} icon="👥" onPress={() => router.push('/(app)/social-walks')} />
-            <Feature title="מטיילי כלבים" sub="מי יוציא את הכלב" bg={colors.greenSoft} icon="🦮" onPress={() => router.push('/(app)/walkers')} />
-            <Feature title="הסטטיסטיקה שלי" sub="טיולים ורצף" bg={colors.purpleSoft} icon="📊" onPress={() => router.push('/(app)/walk-stats')} />
-            <Feature title="אתגרי כושר" sub="התחרו בקהילה" bg={colors.greenSoft} icon="🏆" onPress={() => router.push('/(app)/challenges')} />
-            <Feature title="ההישגים שלי" sub="תגים ומדליות" bg={colors.roseSoft} icon="🏅" onPress={() => router.push('/(app)/badges')} />
-            <Feature title="שירותים קרובים" sub="וטרינר, גינות" bg={colors.purpleSoft} icon="🏥" onPress={() => router.push('/(app)/places')} />
-            <Feature title="Premium" sub="שדרג את החוויה" bg={colors.roseSoft} icon="⭐" onPress={() => router.push('/(app)/premium')} />
+            <Feature title={t('card.map.title')} sub={t('card.map.sub')} bg={colors.greenSoft} icon="🗺️" onPress={() => router.push('/(app)/(tabs)/map')} />
+            <Feature title={t('card.findFriend.title')} sub={t('card.findFriend.sub')} bg={colors.roseSoft} icon="❤️" onPress={() => router.push('/(app)/(tabs)/playdates')} />
+            <Feature title={t('card.search.title')} sub={t('card.search.sub')} bg={colors.purpleSoft} icon="🔎" onPress={() => router.push('/(app)/search')} />
+            <Feature title={t('card.calendar.title')} sub={t('card.calendar.sub')} bg={colors.purpleSoft} icon="📅" onPress={() => router.push('/(app)/calendar')} />
+            <Feature title={t('card.gallery.title')} sub={t('card.gallery.sub')} bg={colors.purpleSoft} icon="📸" onPress={() => router.push('/(app)/feed')} />
+            <Feature title={t('card.lostDog.title')} sub={t('card.lostDog.sub')} bg={colors.roseSoft} icon="🚨" onPress={() => router.push('/(app)/lost-dogs')} />
+            <Feature title={t('card.socialWalks.title')} sub={t('card.socialWalks.sub')} bg={colors.greenSoft} icon="👥" onPress={() => router.push('/(app)/social-walks')} />
+            <Feature title={t('card.walkers.title')} sub={t('card.walkers.sub')} bg={colors.greenSoft} icon="🦮" onPress={() => router.push('/(app)/walkers')} />
+            <Feature title={t('card.walkStats.title')} sub={t('card.walkStats.sub')} bg={colors.purpleSoft} icon="📊" onPress={() => router.push('/(app)/walk-stats')} />
+            <Feature title={t('card.challenges.title')} sub={t('card.challenges.sub')} bg={colors.greenSoft} icon="🏆" onPress={() => router.push('/(app)/challenges')} />
+            <Feature title={t('card.badges.title')} sub={t('card.badges.sub')} bg={colors.roseSoft} icon="🏅" onPress={() => router.push('/(app)/badges')} />
+            <Feature title={t('card.places.title')} sub={t('card.places.sub')} bg={colors.purpleSoft} icon="🏥" onPress={() => router.push('/(app)/places')} />
+            <Feature title={t('card.premium.title')} sub={t('card.premium.sub')} bg={colors.roseSoft} icon="⭐" onPress={() => router.push('/(app)/premium')} />
           </View>
         </ScrollView>
       </SafeAreaView>

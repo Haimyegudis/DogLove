@@ -10,6 +10,7 @@ import {
   Rubik_800ExtraBold,
 } from '@expo-google-fonts/rubik';
 import { AuthProvider } from '../src/state/AuthContext';
+import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { colors } from '../src/theme';
 
 if (!I18nManager.isRTL) {
@@ -37,8 +38,10 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream } }} />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream } }} />
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
