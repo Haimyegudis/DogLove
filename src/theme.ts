@@ -2,19 +2,20 @@
 // Warm, friendly, dog-park-at-sunset palette with soft pillowy surfaces.
 
 export const colors = {
-  // Backgrounds — warm cream / sunset wash
-  cream: '#FFF6EC',
-  creamDeep: '#FBE7CE',
-  peach: '#FFD9B7',
+  // Unified on the cool "Pastel Pup" palette: the legacy warm tokens below now
+  // point at their cool equivalents so every screen reads as one design system.
+  cream: '#F4F5FB',        // app background (was warm cream)
+  creamDeep: '#ECEAF8',
+  peach: '#E3DEFA',
 
-  // Primary — sunset coral (friendly, energetic)
-  coral: '#FF7A4D',
-  coralDeep: '#F2613B',
-  coralSoft: '#FFE3D5',
+  // Primary — now rose (was sunset coral)
+  coral: '#FF5E8A',
+  coralDeep: '#E8455F',
+  coralSoft: '#FFE1EC',
 
-  // Caramel / leash brown — grounding text + accents
-  caramel: '#6B4A33',
-  bark: '#3F2A1D',
+  // Grounding text (was caramel/bark)
+  caramel: '#6E6C8A',
+  bark: '#2D2A4A',
 
   // Heart accent in the wordmark
   heart: '#E8455F',
@@ -22,11 +23,11 @@ export const colors = {
   // Sky pop (links, small accents)
   sky: '#2BA7B0',
 
-  // Neutrals on cream
-  ink: '#3F2A1D',
-  inkSoft: '#9A8472',
+  // Neutrals
+  ink: '#3A3950',
+  inkSoft: '#8E8DA8',
   white: '#FFFFFF',
-  line: '#EAD7C2',
+  line: '#E9E9F3',
   danger: '#D7443E',
 
   // --- "Pastel Pup Dashboard" tokens (aligned to the reference mockup) ---
@@ -65,17 +66,17 @@ export const radius = {
 };
 
 export const shadow = {
-  // Soft, warm-tinted lift for the pillowy button/card feel
+  // Soft, cool-tinted lift for the pillowy button/card feel
   soft: {
-    shadowColor: '#C2632F',
-    shadowOpacity: 0.22,
+    shadowColor: '#6E6AA8',
+    shadowOpacity: 0.18,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
   card: {
-    shadowColor: '#B9743A',
-    shadowOpacity: 0.14,
+    shadowColor: '#6E6AA8',
+    shadowOpacity: 0.12,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 12 },
     elevation: 4,

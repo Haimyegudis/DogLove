@@ -52,8 +52,8 @@ const styles = StyleSheet.create({
     width: 320,
     height: 320,
     borderRadius: 320,
-    backgroundColor: '#FFE2B0',
-    opacity: 0.55,
+    backgroundColor: '#E3DEFA',
+    opacity: 0.5,
   },
   paw: { position: 'absolute', color: colors.caramel },
 });
