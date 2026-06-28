@@ -6,6 +6,7 @@ import { useAuth } from '../../../src/state/AuthContext';
 import { listMessages, sendMessage, subscribeMessages } from '../../../src/services/chat';
 import type { Message } from '../../../src/types/chat';
 import { blockUser, reportUser } from '../../../src/services/safety';
+import { rateUser } from '../../../src/services/ratings';
 import { colors, font, radius } from '../../../src/theme';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { otherInConversation, schedulePlaydate } from '../../../src/services/playdates';
@@ -45,6 +46,22 @@ export default function Chat() {
     const sub = subscribeMessages(id, (m) => setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
     return () => { sub.unsubscribe(); };
   }, [id]);
+
+  async function openRating() {
+    const { data: otherId } = await otherInConversation(id);
+    if (!otherId) return;
+    async function submit(oId: string, stars: number) {
+      const { error } = await rateUser(userId, oId, stars);
+      Alert.alert(error ? 'שגיאה' : 'תודה! ⭐', error || 'הדירוג נשמר');
+    }
+    Alert.alert('דרג את המשתמש', 'כמה כוכבים?', [
+      { text: '⭐', onPress: () => submit(otherId, 1) },
+      { text: '⭐⭐', onPress: () => submit(otherId, 2) },
+      { text: '⭐⭐⭐', onPress: () => submit(otherId, 3) },
+      { text: '⭐⭐⭐⭐', onPress: () => submit(otherId, 4) },
+      { text: '⭐⭐⭐⭐⭐', onPress: () => submit(otherId, 5) },
+    ]);
+  }
 
   async function openMenu() {
     Alert.alert('אפשרויות', undefined, [
@@ -110,6 +127,9 @@ export default function Chat() {
           <Text style={styles.headerTitle}>{headerTitle}</Text>
           <Pressable onPress={() => { setPickedDate(new Date(Date.now() + 3600_000)); setShowDate(true); }} style={styles.scheduleButton}>
             <Text style={styles.scheduleText}>קבע מפגש 📅</Text>
+          </Pressable>
+          <Pressable onPress={openRating} style={styles.rateButton}>
+            <Text style={styles.rateText}>⭐ דרג</Text>
           </Pressable>
           <Pressable onPress={openMenu} style={styles.menuButton}>
             <Text style={styles.menuText}>⋯</Text>
@@ -193,6 +213,8 @@ const styles = StyleSheet.create({
   scheduleText: { fontFamily: font.regular, fontSize: 13, color: colors.brandDark },
   menuButton: { paddingHorizontal: 10, paddingVertical: 6 },
   menuText: { fontFamily: font.regular, fontSize: 18, color: colors.rose },
+  rateButton: { paddingHorizontal: 10, paddingVertical: 6 },
+  rateText: { fontFamily: font.regular, fontSize: 13, color: colors.rose },
   flex: { flex: 1 },
   list: { padding: 14, gap: 8 },
   bubbleWrap: { flexDirection: 'row' },
