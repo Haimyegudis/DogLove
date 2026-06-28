@@ -8,6 +8,8 @@ import VerifiedBadge from '../../../src/components/VerifiedBadge';
 import { getOwnerCard, listOwnerDogs, type OwnerCard, type OwnerDog } from '../../../src/services/owners';
 import { listOwnerPhotos, type GalleryPhoto } from '../../../src/services/gallery';
 import { startConversation } from '../../../src/services/walkers';
+import { blockUser, reportUser } from '../../../src/services/safety';
+import { useAuth } from '../../../src/state/AuthContext';
 import { GENDER_OPTIONS } from '../../../src/types/profile';
 import { colors, font, radius, shadow } from '../../../src/theme';
 
@@ -16,6 +18,8 @@ const genderLabel = (g: string | null) => GENDER_OPTIONS.find((o) => o.value ===
 
 export default function OwnerView() {
   const router = useRouter();
+  const { session } = useAuth();
+  const meId = session!.user.id;
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const [owner, setOwner] = useState<OwnerCard | null>(null);
   const [dogs, setDogs] = useState<OwnerDog[]>([]);
@@ -77,6 +81,16 @@ export default function OwnerView() {
         <Pressable style={styles.msgBtn} onPress={onMessage}>
           <Text style={styles.msgBtnText}>שלח הודעה 💬</Text>
         </Pressable>
+
+        <Pressable style={styles.safetyBtn} onPress={() => {
+          Alert.alert('דיווח וחסימה', owner.display_name ?? '', [
+            { text: 'ביטול', style: 'cancel' },
+            { text: 'דווח', onPress: async () => { const { error } = await reportUser(meId, userId, 'דווח מפרופיל'); Alert.alert(error ? 'שגיאה' : 'תודה', error ?? 'הדיווח התקבל.'); } },
+            { text: 'חסום', style: 'destructive', onPress: async () => { const { error } = await blockUser(meId, userId); if (error) { Alert.alert('שגיאה', error); return; } Alert.alert('נחסם', 'לא תראו עוד אחד את השני.'); router.back(); } },
+          ]);
+        }}>
+          <Text style={styles.safetyText}>דיווח / חסימה 🚫</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -94,5 +108,8 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: font.black, fontSize: 16, color: colors.brandDark, textAlign: 'right', marginTop: 4 },
   msgBtn: { backgroundColor: colors.rose, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
   msgBtnText: { fontFamily: font.black, fontSize: 16, color: colors.white },
+  safetyBtn: { alignSelf: 'center', paddingVertical: 8 },
+  safetyText: { fontFamily: font.medium, color: colors.inkCoolSoft, fontSize: 13 },
   empty: { fontFamily: font.regular, color: colors.inkCoolSoft, textAlign: 'center', marginTop: 12 },
 });
+

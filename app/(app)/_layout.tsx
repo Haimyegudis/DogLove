@@ -3,6 +3,7 @@ import { Redirect, Stack, useRouter, usePathname } from 'expo-router';
 import { View } from 'react-native';
 import { useAuth } from '../../src/state/AuthContext';
 import { useToast } from '../../src/components/Toast';
+import { useOnboarding } from '../../src/hooks/useOnboarding';
 import { subscribeInboxMessages } from '../../src/services/chat';
 import { colors, font } from '../../src/theme';
 
@@ -31,11 +32,15 @@ function MessageToastListener({ userId }: { userId: string }) {
 
 export default function AppLayout() {
   const { session, loading } = useAuth();
+  const { seen } = useOnboarding();
+  const pathname = usePathname();
 
   // Guard the signed-in group: when the session clears (e.g. sign-out),
   // bounce back to login instead of stranding the user on a stale screen.
   if (loading) return <View style={{ flex: 1, backgroundColor: colors.bgApp }} />;
   if (!session) return <Redirect href="/(auth)/login" />;
+  // First-run: show the onboarding carousel once.
+  if (seen === false && !pathname?.includes('onboarding')) return <Redirect href="/(app)/onboarding" />;
 
   // Stack screens get a themed header with a back button; the tab group and
   // the OAuth callback hide it.
@@ -79,6 +84,9 @@ export default function AppLayout() {
       <Stack.Screen name="place/[id]" options={{ title: 'מקום' }} />
       <Stack.Screen name="dog-view/[dogId]" options={{ title: 'כרטיס כלב' }} />
       <Stack.Screen name="owner-view/[userId]" options={{ title: 'פרופיל' }} />
+      <Stack.Screen name="discover-people" options={{ title: 'הכרויות' }} />
+      <Stack.Screen name="park-checkins" options={{ title: 'מי בפארק עכשיו' }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
     </Stack>
     </>
   );

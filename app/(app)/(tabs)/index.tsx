@@ -88,6 +88,8 @@ export default function Home() {
             <Feature title={t('card.badges.title')} sub={t('card.badges.sub')} bg={colors.roseSoft} icon="🏅" onPress={() => router.push('/(app)/badges')} />
             <Feature title={t('card.places.title')} sub={t('card.places.sub')} bg={colors.purpleSoft} icon="🏥" onPress={() => router.push('/(app)/places')} />
             <Feature title={t('card.premium.title')} sub={t('card.premium.sub')} bg={colors.roseSoft} icon="⭐" onPress={() => router.push('/(app)/premium')} />
+            <Feature title="הכרויות" sub="הכר אנשים דרך הכלב" bg={colors.roseSoft} icon="💞" onPress={() => router.push('/(app)/discover-people')} />
+            <Feature title="מי בפארק עכשיו" sub="צ׳ק-אין ומפגשים" bg={colors.greenSoft} icon="🌳" onPress={() => router.push('/(app)/park-checkins')} />
           </View>
         </ScrollView>
       </SafeAreaView>

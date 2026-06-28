@@ -9,6 +9,7 @@ import FormField from '../../src/components/FormField';
 import CityPicker from '../../src/components/CityPicker';
 import { useAuth } from '../../src/state/AuthContext';
 import { getMyProfile, saveMyProfile } from '../../src/services/profile';
+import { getOwnerCard, setIntent } from '../../src/services/owners';
 import { uploadImage } from '../../src/services/storage';
 import { pickSquareImage } from '../../src/lib/pickImage';
 import { isAdult } from '../../src/lib/age';
@@ -33,6 +34,7 @@ export default function EditProfile() {
   const [gender, setGender] = useState<Gender | null>(null);
   const [city, setCity] = useState('');
   const [bio, setBio] = useState('');
+  const [intent, setIntentState] = useState<string[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -46,7 +48,12 @@ export default function EditProfile() {
       setCity(data.city ?? '');
       setBio(data.bio ?? '');
     });
+    getOwnerCard(userId).then(({ data }) => { if (data?.intent) setIntentState(data.intent); });
   }, [userId]);
+
+  function toggleIntent(v: string) {
+    setIntentState((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
+  }
 
   async function onPickPhoto() {
     const uri = await pickSquareImage();
@@ -77,6 +84,7 @@ export default function EditProfile() {
     const { error } = await saveMyProfile(userId, {
       display_name: name.trim(), photo_url: photoUrl, date_of_birth: dob, gender, bio: bio.trim() || null, city: city.trim() || null,
     });
+    await setIntent(intent);
     setBusy(false);
     if (error) { Alert.alert('שמירה נכשלה', error); return; }
     router.replace('/(app)/(tabs)');
@@ -126,6 +134,16 @@ export default function EditProfile() {
 
             <FormField label="יישוב">
               <CityPicker value={city} onChange={setCity} placeholder="עיר / מושב / קיבוץ" />
+            </FormField>
+
+            <FormField label="אני מחפש/ת (אפשר כמה)">
+              <View style={styles.chips}>
+                {[{ v: 'friends', l: 'חברים לכלב 🐾' }, { v: 'dates', l: 'דייטים ❤️' }, { v: 'walks', l: 'טיולים משותפים 🦮' }].map((o) => (
+                  <Pressable key={o.v} onPress={() => toggleIntent(o.v)} style={[styles.chip, intent.includes(o.v) && styles.chipOn]}>
+                    <Text style={[styles.chipText, intent.includes(o.v) && styles.chipTextOn]}>{o.l}</Text>
+                  </Pressable>
+                ))}
+              </View>
             </FormField>
 
             <FormField label="קצת עליי (אופציונלי)">
