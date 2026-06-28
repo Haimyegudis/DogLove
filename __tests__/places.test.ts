@@ -69,7 +69,8 @@ test('nearbyPlaces POSTs a body containing the right OSM tag for vet', async () 
   // @ts-ignore
   const body: string = decodeURIComponent((global.fetch as jest.Mock).mock.calls[0][1].body);
   expect(body).toContain('"amenity"="veterinary"');
-  expect(body).toContain('3000');
+  // Vets are sparse, so the radius is widened to at least 15km.
+  expect(body).toContain('15000');
 });
 
 test('nearbyPlaces POSTs a body containing dog_park tag for park', async () => {
@@ -93,7 +94,7 @@ test('nearbyPlaces POSTs a body containing shop=pet tag for petshop', async () =
 // ── 4. Default radius is 5000 ────────────────────────────────────────────────
 test('nearbyPlaces uses default radius 5000 when not supplied', async () => {
   mockFetch({ elements: [] });
-  await nearbyPlaces(32.0, 35.0, 'vet');
+  await nearbyPlaces(32.0, 35.0, 'petshop');
 
   // @ts-ignore
   const body: string = decodeURIComponent((global.fetch as jest.Mock).mock.calls[0][1].body);
@@ -114,12 +115,16 @@ test('nearbyPlaces filters out elements without coordinates', async () => {
 });
 
 // ── 6. Missing name falls back to Hebrew placeholder ─────────────────────────
-test('nearbyPlaces uses fallback Hebrew name when tags.name is absent', async () => {
+test('nearbyPlaces uses a kind-based Hebrew name when tags.name is absent', async () => {
   mockFetch({
     elements: [{ type: 'node', id: 5, lat: 32.1, lon: 34.8, tags: {} }],
   });
-  const { data } = await nearbyPlaces(32.1, 34.8, 'vet');
-  expect(data[0].name).toBe('ללא שם');
+  const vet = await nearbyPlaces(32.1, 34.8, 'vet');
+  expect(vet.data[0].name).toBe('מרפאה וטרינרית');
+
+  mockFetch({ elements: [{ type: 'node', id: 6, lat: 32.1, lon: 34.8, tags: { leisure: 'dog_park' } }] });
+  const park = await nearbyPlaces(32.1, 34.8, 'park');
+  expect(park.data[0].name).toBe('גינת כלבים');
 });
 
 // ── 7. HTTP error (non-ok response) ──────────────────────────────────────────

@@ -17,9 +17,13 @@ function buildOQL(kind: PlaceKind, radiusM: number, lat: number, lng: number): s
   let elements: string;
 
   if (kind === 'vet') {
+    // Vets are tagged a few different ways and are sparse outside big cities.
     elements = `
   node["amenity"="veterinary"](around:${radiusM},${lat},${lng});
-  way["amenity"="veterinary"](around:${radiusM},${lat},${lng});`;
+  way["amenity"="veterinary"](around:${radiusM},${lat},${lng});
+  node["healthcare"="veterinary"](around:${radiusM},${lat},${lng});
+  way["healthcare"="veterinary"](around:${radiusM},${lat},${lng});
+  node["shop"="veterinary"](around:${radiusM},${lat},${lng});`;
   } else if (kind === 'park') {
     // dog_park first, then generic leisure=park as fall-back
     elements = `
@@ -72,13 +76,22 @@ async function fetchOverpass(oql: string): Promise<any[]> {
   throw new Error(lastErr || 'כל השרתים לא זמינים כרגע');
 }
 
+// A useful Hebrew label when OSM has no name tag, based on what the place is.
+function fallbackName(kind: PlaceKind, tags: any): string {
+  if (kind === 'vet') return 'מרפאה וטרינרית';
+  if (kind === 'petshop') return 'חנות לחיות מחמד';
+  return tags?.leisure === 'dog_park' ? 'גינת כלבים' : 'פארק';
+}
+
 export async function nearbyPlaces(
   lat: number,
   lng: number,
   kind: PlaceKind,
   radiusM = 5000,
 ): Promise<PlacesResult> {
-  const oql = buildOQL(kind, radiusM, lat, lng);
+  // Vets are sparse — search a wider ring so towns/suburbs find some.
+  const effectiveRadius = kind === 'vet' ? Math.max(radiusM, 15000) : radiusM;
+  const oql = buildOQL(kind, effectiveRadius, lat, lng);
   try {
     const elements = await fetchOverpass(oql);
 
@@ -90,7 +103,7 @@ export async function nearbyPlaces(
 
         return {
           id: el.id as number,
-          name: (el.tags?.name as string) || 'ללא שם',
+          name: (el.tags?.name as string) || fallbackName(kind, el.tags),
           lat: elLat,
           lng: elLng,
           kind,
