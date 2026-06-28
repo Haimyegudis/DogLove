@@ -116,9 +116,14 @@ export default function DogForm() {
           </Pressable>
 
           {!isNew && (
-            <Pressable onPress={onDelete} style={styles.deleteBtn}>
-              <Text style={styles.deleteText}>מחיקת הכלב</Text>
-            </Pressable>
+            <>
+              <Pressable onPress={() => router.push('/(app)/dog-health/' + id)} style={styles.healthBtn}>
+                <Text style={styles.healthBtnText}>💉 בריאות וחיסונים</Text>
+              </Pressable>
+              <Pressable onPress={onDelete} style={styles.deleteBtn}>
+                <Text style={styles.deleteText}>מחיקת הכלב</Text>
+              </Pressable>
+            </>
           )}
         </ScrollView>
       </SafeAreaView>
@@ -149,4 +154,6 @@ const styles = StyleSheet.create({
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
   deleteBtn: { alignItems: 'center', paddingVertical: 10 },
   deleteText: { fontFamily: font.medium, color: colors.danger, fontSize: 15 },
+  healthBtn: { alignItems: 'center', paddingVertical: 12, backgroundColor: colors.purpleSoft, borderWidth: 1.5, borderColor: colors.purple, borderRadius: radius.pill },
+  healthBtnText: { fontFamily: font.bold, color: colors.purple, fontSize: 15 },
 });
