@@ -1,9 +1,9 @@
 import 'dotenv/config';
-import { ExpoConfig } from 'expo/config';
 
-const config: ExpoConfig = {
+const config = {
   name: 'כלב LOVE',
   slug: 'doglove',
+  owner: 'haimye',
   scheme: 'doglove',
   orientation: 'portrait',
   userInterfaceStyle: 'light',

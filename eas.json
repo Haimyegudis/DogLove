@@ -5,7 +5,11 @@
       "developmentClient": true,
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": {}
+      "env": {
+        "SUPABASE_URL": "https://jynyrowglsojakfwcufm.supabase.co",
+        "SUPABASE_ANON_KEY": "sb_publishable_fNq0QeJulrcrQrnOtUzh4w_sIKaOvKb",
+        "EAS_PROJECT_ID": "2fcdf288-df71-4ef8-94ba-bb82bb0d38e0"
+      }
     },
     "preview": {
       "distribution": "internal",
