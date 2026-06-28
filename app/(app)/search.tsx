@@ -77,13 +77,14 @@ export default function Search() {
                   subtitle={d.owner_name ?? undefined} onPress={() => router.push(`/(app)/request/${d.dog_id}`)} />
               ))
             : users.map((u) => (
-                <View key={u.user_id} style={styles.userRow}>
+                <Pressable key={u.user_id} style={styles.userRow} onPress={() => router.push('/(app)/owner-view/' + u.user_id)}>
                   <Avatar uri={u.photo_url} fallback="🧑" size={48} />
                   <View style={styles.userInfo}>
                     <Text style={styles.userName}>{u.display_name ?? 'בעל כלב'}</Text>
                     <Text style={styles.userMeta}>{u.age} · {u.gender === 'female' ? 'נקבה' : u.gender === 'male' ? 'זכר' : '—'} · {u.city ?? ''}</Text>
                   </View>
-                </View>
+                  <Text style={styles.chevron}>‹</Text>
+                </Pressable>
               ))}
         </ScrollView>
       </SafeAreaView>
@@ -113,4 +114,5 @@ const styles = StyleSheet.create({
   userInfo: { flex: 1 },
   userName: { fontFamily: font.bold, fontSize: 16, color: colors.brandDark, textAlign: 'right' },
   userMeta: { fontFamily: font.regular, fontSize: 13, color: colors.inkCoolSoft, textAlign: 'right' },
+  chevron: { fontFamily: font.bold, fontSize: 22, color: colors.inkCoolSoft },
 });

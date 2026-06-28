@@ -24,7 +24,7 @@ test('subscribes to walk_sessions changes and unsubscribes', () => {
   expect(mockChannel).toHaveBeenCalled();
   expect(mockChannelObj.on).toHaveBeenCalledWith(
     'postgres_changes',
-    expect.objectContaining({ event: '*', schema: 'public', table: 'walk_sessions' }),
+    expect.objectContaining({ event: '*', schema: 'public', table: 'active_walk_pings' }),
     expect.any(Function),
   );
   // simulate an event → onChange fires
