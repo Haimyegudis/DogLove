@@ -20,6 +20,18 @@ export async function sendMessage(conversationId: string, senderId: string, body
   return { error: error?.message ?? null };
 }
 
+// Inbox-wide listener: RLS only delivers messages from conversations the
+// current user belongs to, so a single unfiltered INSERT subscription is a
+// safe "you got mail" feed for the whole app (used for the new-message toast).
+export function subscribeInboxMessages(onInsert: (m: Message) => void) {
+  const channel = supabase
+    .channel('inbox_messages')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
+      (payload: { new: Message }) => onInsert(payload.new))
+    .subscribe();
+  return { unsubscribe: () => supabase.removeChannel(channel) };
+}
+
 export function subscribeMessages(conversationId: string, onInsert: (m: Message) => void) {
   const channel = supabase
     .channel(`messages_${conversationId}`)

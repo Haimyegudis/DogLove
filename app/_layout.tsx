@@ -11,6 +11,7 @@ import {
 } from '@expo-google-fonts/rubik';
 import { AuthProvider } from '../src/state/AuthContext';
 import { LanguageProvider } from '../src/i18n/LanguageContext';
+import { ToastProvider } from '../src/components/Toast';
 import { colors } from '../src/theme';
 
 if (!I18nManager.isRTL) {
@@ -40,7 +41,9 @@ export default function RootLayout() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream } }} />
+        <ToastProvider>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream } }} />
+        </ToastProvider>
       </AuthProvider>
     </LanguageProvider>
   );

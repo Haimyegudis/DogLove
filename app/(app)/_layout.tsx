@@ -1,7 +1,33 @@
-import { Redirect, Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { Redirect, Stack, useRouter, usePathname } from 'expo-router';
 import { View } from 'react-native';
 import { useAuth } from '../../src/state/AuthContext';
+import { useToast } from '../../src/components/Toast';
+import { subscribeInboxMessages } from '../../src/services/chat';
 import { colors, font } from '../../src/theme';
+
+// Foreground "you got mail" toast: any incoming message from another user that
+// isn't from the chat you're already looking at pops a tappable banner.
+function MessageToastListener({ userId }: { userId: string }) {
+  const { showToast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const sub = subscribeInboxMessages((m) => {
+      if (m.sender_id === userId) return;                 // my own message
+      if (pathname?.includes(m.conversation_id)) return;  // already in this chat
+      showToast({
+        title: 'הודעה חדשה 💬',
+        body: m.body,
+        onPress: () => router.push(`/(app)/chat/${m.conversation_id}`),
+      });
+    });
+    return () => { sub.unsubscribe(); };
+  }, [userId, pathname, showToast, router]);
+
+  return null;
+}
 
 export default function AppLayout() {
   const { session, loading } = useAuth();
@@ -14,6 +40,8 @@ export default function AppLayout() {
   // Stack screens get a themed header with a back button; the tab group and
   // the OAuth callback hide it.
   return (
+    <>
+    <MessageToastListener userId={session.user.id} />
     <Stack
       screenOptions={{
         headerShown: true,
@@ -48,5 +76,6 @@ export default function AppLayout() {
       <Stack.Screen name="places" options={{ title: 'שירותים בקרבת מקום' }} />
       <Stack.Screen name="premium" options={{ title: 'Premium' }} />
     </Stack>
+    </>
   );
 }
