@@ -18,6 +18,13 @@
 
 ## 1. Overview
 
+### App purpose / vision
+כלב LOVE (DogLove) serves **three connected purposes**:
+
+1. **A social app for dogs** — help dogs play together and make new dog friends. Owners discover nearby dogs, send playdate requests, and arrange meetups so their dogs build a social circle.
+2. **A dating app for singles with dogs** — let single dog-owners meet *through* their dogs. The dogs are the icebreaker: meet at the park, the dogs play, and the owners might start something new.
+3. **A dog-owner community** — find new friends, find someone who can take your dog out for a walk when you can't (social dog-walkers), and schedule group meetups where multiple owners and their dogs gather in a park.
+
 DogLove is a cross-platform mobile social network for dogs and their owners. Owners create profiles for themselves and their dogs, see other active dogs near them on a live map, set up playdates, and chat with each other in real time.
 
 This document covers the **MVP** only. Later features (fitness challenges, photo feed, walk scheduling, habit tracking) are out of scope for v1 and listed in Section 11.
