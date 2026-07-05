@@ -3,9 +3,11 @@ import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { colors, font, radius, shadow } from '../../src/theme';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { myBadges, type Badge } from '../../src/services/badges';
 
 export default function BadgesScreen() {
+  const { t } = useI18n();
   const [badges, setBadges] = useState<Badge[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,11 +28,11 @@ export default function BadgesScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>ההישגים שלי</Text>
+        <Text style={styles.title}>{t('badges.title')}</Text>
         {loading ? (
           <ActivityIndicator size="large" color={colors.rose} style={styles.loader} />
         ) : badges === null || badges.length === 0 ? (
-          <Text style={styles.empty}>אין הישגים עדיין — צא לטייל!</Text>
+          <Text style={styles.empty}>{t('badges.empty')}</Text>
         ) : (
           <View style={styles.grid}>
             {badges.map((badge) => (
@@ -44,6 +46,7 @@ export default function BadgesScreen() {
 }
 
 function BadgeCard({ badge }: { badge: Badge }) {
+  const { t } = useI18n();
   const earned = badge.earned;
   return (
     <View style={[styles.card, earned ? styles.cardEarned : styles.cardLocked]}>
@@ -55,7 +58,7 @@ function BadgeCard({ badge }: { badge: Badge }) {
       </Text>
       {earned ? (
         <View style={styles.earnedPill}>
-          <Text style={styles.earnedText}>הושג ✓</Text>
+          <Text style={styles.earnedText}>{t('badges.earned')}</Text>
         </View>
       ) : (
         <Text style={styles.progress}>

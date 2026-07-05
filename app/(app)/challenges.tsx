@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { colors, font, radius, shadow } from '../../src/theme';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import {
   listChallenges,
   joinChallenge,
@@ -22,13 +23,14 @@ import {
 
 type GoalKind = 'walks' | 'distance_km' | 'streak_days';
 
-const GOAL_LABELS: Record<GoalKind, string> = {
-  walks: 'טיולים',
-  distance_km: 'ק״מ',
-  streak_days: 'ימי רצף',
+const GOAL_LABEL_KEYS: Record<GoalKind, string> = {
+  walks: 'challenges.goalWalks',
+  distance_km: 'challenges.goalDistance',
+  streak_days: 'challenges.goalStreak',
 };
 
 export default function ChallengesScreen() {
+  const { t } = useI18n();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -44,8 +46,9 @@ export default function ChallengesScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await listChallenges();
-    setChallenges(data ?? []);
+    const { data, error } = await listChallenges();
+    if (error) Alert.alert(t('challenges.error'), error);
+    else setChallenges(data ?? []);
     setLoading(false);
   }, []);
 
@@ -66,7 +69,7 @@ export default function ChallengesScreen() {
   const handleJoin = async (id: string) => {
     setBusyId(id);
     const { error } = await joinChallenge(id);
-    if (error) Alert.alert('שגיאה', error);
+    if (error) Alert.alert(t('challenges.error'), error);
     else await load();
     setBusyId(null);
   };
@@ -74,17 +77,17 @@ export default function ChallengesScreen() {
   const handleLeave = async (id: string) => {
     setBusyId(id);
     const { error } = await leaveChallenge(id);
-    if (error) Alert.alert('שגיאה', error);
+    if (error) Alert.alert(t('challenges.error'), error);
     else await load();
     setBusyId(null);
   };
 
   const handleCreate = async () => {
-    if (!newTitle.trim()) { Alert.alert('שגיאה', 'יש להזין כותרת לאתגר'); return; }
+    if (!newTitle.trim()) { Alert.alert(t('challenges.error'), t('challenges.errorTitle')); return; }
     const target = parseFloat(newTarget);
-    if (!target || target <= 0) { Alert.alert('שגיאה', 'יש להזין יעד חיובי'); return; }
+    if (!target || target <= 0) { Alert.alert(t('challenges.error'), t('challenges.errorTarget')); return; }
     const days = parseInt(newDays, 10);
-    if (!days || days <= 0) { Alert.alert('שגיאה', 'יש להזין מספר ימים חיובי'); return; }
+    if (!days || days <= 0) { Alert.alert(t('challenges.error'), t('challenges.errorDays')); return; }
 
     const endsAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
     setCreating(true);
@@ -96,7 +99,7 @@ export default function ChallengesScreen() {
       endsAt,
     });
     setCreating(false);
-    if (error) { Alert.alert('שגיאה', error); return; }
+    if (error) { Alert.alert(t('challenges.error'), error); return; }
     setNewTitle('');
     setNewDescription('');
     setNewKind('walks');
@@ -111,24 +114,26 @@ export default function ChallengesScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.headerRow}>
-          <Text style={styles.title}>אתגרי כושר</Text>
+          <Text style={styles.title}>{t('challenges.title')}</Text>
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => setShowForm(v => !v)}
-            accessibilityLabel="אתגר חדש"
+            accessibilityRole="button"
+            accessibilityLabel={t('challenges.newChallenge')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={styles.addBtnText}>{showForm ? '✕' : '+ אתגר חדש'}</Text>
+            <Text style={styles.addBtnText}>{showForm ? '✕' : t('challenges.newChallengeButton')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Create form */}
         {showForm && (
           <View style={styles.form}>
-            <Text style={styles.formTitle}>אתגר חדש</Text>
+            <Text style={styles.formTitle}>{t('challenges.newChallenge')}</Text>
 
             <TextInput
               style={styles.input}
-              placeholder="כותרת האתגר"
+              placeholder={t('challenges.titlePlaceholder')}
               placeholderTextColor={colors.inkCoolSoft}
               value={newTitle}
               onChangeText={setNewTitle}
@@ -137,7 +142,7 @@ export default function ChallengesScreen() {
 
             <TextInput
               style={[styles.input, styles.inputMulti]}
-              placeholder="תיאור (אופציונלי)"
+              placeholder={t('challenges.descriptionPlaceholder')}
               placeholderTextColor={colors.inkCoolSoft}
               value={newDescription}
               onChangeText={setNewDescription}
@@ -147,16 +152,18 @@ export default function ChallengesScreen() {
             />
 
             {/* Goal kind chips */}
-            <Text style={styles.formLabel}>סוג יעד</Text>
+            <Text style={styles.formLabel}>{t('challenges.goalKindLabel')}</Text>
             <View style={styles.chips}>
               {(['walks', 'distance_km', 'streak_days'] as GoalKind[]).map(k => (
                 <TouchableOpacity
                   key={k}
                   style={[styles.chip, newKind === k && styles.chipActive]}
                   onPress={() => setNewKind(k)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(GOAL_LABEL_KEYS[k])}
                 >
                   <Text style={[styles.chipText, newKind === k && styles.chipTextActive]}>
-                    {GOAL_LABELS[k]}
+                    {t(GOAL_LABEL_KEYS[k])}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -164,10 +171,10 @@ export default function ChallengesScreen() {
 
             <View style={styles.row2}>
               <View style={styles.halfInput}>
-                <Text style={styles.formLabel}>יעד ({GOAL_LABELS[newKind]})</Text>
+                <Text style={styles.formLabel}>{t('challenges.goalTargetPrefix')}{t(GOAL_LABEL_KEYS[newKind])})</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="למשל 10"
+                  placeholder={t('challenges.targetPlaceholder')}
                   placeholderTextColor={colors.inkCoolSoft}
                   value={newTarget}
                   onChangeText={setNewTarget}
@@ -176,7 +183,7 @@ export default function ChallengesScreen() {
                 />
               </View>
               <View style={styles.halfInput}>
-                <Text style={styles.formLabel}>מספר ימים</Text>
+                <Text style={styles.formLabel}>{t('challenges.daysLabel')}</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="7"
@@ -193,10 +200,12 @@ export default function ChallengesScreen() {
               style={[styles.createBtn, creating && styles.createBtnDisabled]}
               onPress={handleCreate}
               disabled={creating}
+              accessibilityRole="button"
+              accessibilityLabel={t('challenges.createButton')}
             >
               {creating
                 ? <ActivityIndicator size="small" color={colors.white} />
-                : <Text style={styles.createBtnText}>צור אתגר</Text>
+                : <Text style={styles.createBtnText}>{t('challenges.createButton')}</Text>
               }
             </TouchableOpacity>
           </View>
@@ -206,7 +215,7 @@ export default function ChallengesScreen() {
         {loading ? (
           <ActivityIndicator size="large" color={colors.rose} style={styles.loader} />
         ) : challenges.length === 0 ? (
-          <Text style={styles.empty}>אין אתגרים פעילים כרגע</Text>
+          <Text style={styles.empty}>{t('challenges.empty')}</Text>
         ) : (
           <View style={styles.list}>
             {challenges.map(c => (
@@ -236,11 +245,13 @@ function ChallengeCard({
   onJoin: () => void;
   onLeave: () => void;
 }) {
+  const { t } = useI18n();
   const { title, description, goal_kind, goal_target, participant_count, i_joined, my_progress } = challenge;
   const progress = Math.min(my_progress / goal_target, 1);
   const progressPct = Math.round(progress * 100);
   const progressColor = progress >= 1 ? colors.green : colors.rose;
-  const kindLabel = GOAL_LABELS[goal_kind as GoalKind] ?? goal_kind;
+  const kindKey = GOAL_LABEL_KEYS[goal_kind as GoalKind];
+  const kindLabel = kindKey ? t(kindKey) : goal_kind;
 
   return (
     <View style={[styles.card, shadow.card]}>
@@ -251,7 +262,7 @@ function ChallengeCard({
       {/* Progress */}
       <View style={styles.progressSection}>
         <View style={styles.progressLabelRow}>
-          <Text style={styles.progressLabel}>התקדמות</Text>
+          <Text style={styles.progressLabel}>{t('challenges.progressLabel')}</Text>
           <Text style={[styles.progressValue, { color: progressColor }]}>
             {my_progress} / {goal_target} {kindLabel}
           </Text>
@@ -263,15 +274,17 @@ function ChallengeCard({
 
       {/* Footer */}
       <View style={styles.cardFooter}>
-        <Text style={styles.participantsText}>👥 {participant_count} משתתפים</Text>
+        <Text style={styles.participantsText}>👥 {participant_count}{t('challenges.participantsSuffix')}</Text>
         <TouchableOpacity
           style={[styles.actionBtn, i_joined ? styles.actionBtnLeave : styles.actionBtnJoin]}
           onPress={i_joined ? onLeave : onJoin}
           disabled={busy}
+          accessibilityRole="button"
+          accessibilityLabel={i_joined ? t('challenges.leave') : t('challenges.join')}
         >
           {busy
             ? <ActivityIndicator size="small" color={colors.white} />
-            : <Text style={i_joined ? styles.actionBtnTextLeave : styles.actionBtnTextJoin}>{i_joined ? 'עזוב' : 'הצטרף'}</Text>
+            : <Text style={i_joined ? styles.actionBtnTextLeave : styles.actionBtnTextJoin}>{i_joined ? t('challenges.leave') : t('challenges.join')}</Text>
           }
         </TouchableOpacity>
       </View>

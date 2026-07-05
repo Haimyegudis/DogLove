@@ -5,31 +5,33 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import Avatar from '../../../src/components/Avatar';
 import { listConversations } from '../../../src/services/chat';
 import type { ConversationRow } from '../../../src/types/chat';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import { colors, font, radius } from '../../../src/theme';
 
 export default function Messages() {
   const router = useRouter();
+  const { t } = useI18n();
   const [rows, setRows] = useState<ConversationRow[]>([]);
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    listConversations().then(({ data, error }) => { if (!active) return; if (error) { Alert.alert('שגיאה', error); return; } setRows(data); });
+    listConversations().then(({ data, error }) => { if (!active) return; if (error) { Alert.alert(t('messages.error'), error); return; } setRows(data); });
     return () => { active = false; };
   }, []));
 
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe}>
-        <Text style={styles.title}>הודעות 💬</Text>
+        <Text style={styles.title}>{t('messages.title')}</Text>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {rows.length === 0 ? (
-            <Text style={styles.empty}>אין שיחות עדיין. אשר בקשת משחק כדי להתחיל לשוחח!</Text>
+            <Text style={styles.empty}>{t('messages.empty')}</Text>
           ) : rows.map((c) => (
-            <Pressable key={c.conversation_id} onPress={() => router.push(`/(app)/chat/${c.conversation_id}?name=${encodeURIComponent(c.other_name ?? 'בעל כלב')}`)} style={styles.row}>
+            <Pressable key={c.conversation_id} onPress={() => router.push(`/(app)/chat/${c.conversation_id}?name=${encodeURIComponent(c.other_name ?? t('messages.ownerFallback'))}`)} accessibilityRole="button" accessibilityLabel={c.other_name ?? t('messages.ownerFallback')} style={styles.row}>
               <Avatar uri={c.other_photo} fallback="🧑" size={52} />
               <View style={styles.info}>
-                <Text style={styles.name}>{c.other_name ?? 'בעל כלב'}</Text>
-                <Text style={styles.preview} numberOfLines={1}>{c.last_body ?? 'התחילו לשוחח 🐾'}</Text>
+                <Text style={styles.name}>{c.other_name ?? t('messages.ownerFallback')}</Text>
+                <Text style={styles.preview} numberOfLines={1}>{c.last_body ?? t('messages.startChat')}</Text>
               </View>
             </Pressable>
           ))}

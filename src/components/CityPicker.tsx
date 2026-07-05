@@ -28,19 +28,26 @@ export default function CityPicker({ value, onChange, placeholder = 'עיר', on
           style={styles.input}
           placeholder={placeholder}
           placeholderTextColor={colors.inkCoolSoft}
+          accessibilityLabel={placeholder}
           value={value}
           onChangeText={onChange}
           onSubmitEditing={onSubmit}
           returnKeyType="search"
           textAlign="right"
         />
-        <Pressable style={styles.caret} onPress={() => setOpen(true)} hitSlop={8}>
-          <Text style={styles.caretText}>▾</Text>
+        <Pressable
+          style={styles.caret}
+          onPress={() => setOpen(true)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="בחירת יישוב מהרשימה"
+        >
+          <Text style={styles.caretText} importantForAccessibility="no">▾</Text>
         </Pressable>
       </View>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel="סגירת רשימת היישובים">
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.sheetTitle}>בחר יישוב</Text>
             <FlatList
@@ -53,6 +60,8 @@ export default function CityPicker({ value, onChange, placeholder = 'עיר', on
                 <Pressable
                   style={styles.cityRow}
                   onPress={() => { onChange(item); setOpen(false); }}
+                  accessibilityRole="button"
+                  accessibilityLabel={item}
                 >
                   <Text style={styles.cityText}>{item}</Text>
                 </Pressable>

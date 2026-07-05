@@ -15,6 +15,7 @@ import DogParkBackground from '../../src/components/DogParkBackground';
 import { checkInPark, checkOutPark, nearbyCheckins, type ParkCheckin } from '../../src/services/checkins';
 import { getCurrentCoords, requestLocationPermission } from '../../src/services/location';
 import { startConversation } from '../../src/services/walkers';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius, shadow } from '../../src/theme';
 import type { Coords } from '../../src/types/walk';
 
@@ -36,6 +37,7 @@ function formatDistance(m: number): string {
 
 export default function ParkCheckins() {
   const router = useRouter();
+  const { t } = useI18n();
 
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
@@ -54,7 +56,7 @@ export default function ParkCheckins() {
     const { data, error } = await nearbyCheckins(center);
     if (!mountedRef.current) return;
     setLoadingList(false);
-    if (error) { Alert.alert('שגיאה', error); return; }
+    if (error) { Alert.alert(t('parkCheckins.error'), error); return; }
     setNearby(data);
   }, []);
 
@@ -65,13 +67,13 @@ export default function ParkCheckins() {
       const granted = await requestLocationPermission();
       if (!granted) {
         setLoadingLocation(false);
-        Alert.alert('הרשאת מיקום', 'נדרשת הרשאת מיקום כדי לראות בדקים בקרבתך.');
+        Alert.alert(t('parkCheckins.locationPermTitle'), t('parkCheckins.locationPermList'));
         return;
       }
       const c = await getCurrentCoords();
       if (!mountedRef.current) return;
       setLoadingLocation(false);
-      if (!c) { Alert.alert('מיקום', 'לא הצלחנו לקבל את מיקומך. נסה שוב.'); return; }
+      if (!c) { Alert.alert(t('parkCheckins.locationTitle'), t('parkCheckins.locationFail')); return; }
       setCoords(c);
       refreshList(c);
     })();
@@ -83,15 +85,15 @@ export default function ParkCheckins() {
     try {
       if (checkedIn) {
         const { error } = await checkOutPark();
-        if (error) { Alert.alert('שגיאה', error); return; }
+        if (error) { Alert.alert(t('parkCheckins.error'), error); return; }
         setCheckedIn(false);
       } else {
         const granted = await requestLocationPermission();
-        if (!granted) { Alert.alert('הרשאת מיקום', 'נדרשת הרשאת מיקום לצ׳ק-אין.'); return; }
+        if (!granted) { Alert.alert(t('parkCheckins.locationPermTitle'), t('parkCheckins.locationPermCheckin')); return; }
         const c = await getCurrentCoords();
-        if (!c) { Alert.alert('מיקום', 'לא הצלחנו לאתר אותך. נסה שוב.'); return; }
+        if (!c) { Alert.alert(t('parkCheckins.locationTitle'), t('parkCheckins.locateFail')); return; }
         const { error } = await checkInPark(c);
-        if (error) { Alert.alert('שגיאה', error); return; }
+        if (error) { Alert.alert(t('parkCheckins.error'), error); return; }
         setCoords(c);
         setCheckedIn(true);
         // Refresh list from the new location.
@@ -107,7 +109,7 @@ export default function ParkCheckins() {
     setMessagingId(item.user_id);
     try {
       const { data: convId, error } = await startConversation(item.user_id);
-      if (error || !convId) { Alert.alert('שגיאה', error ?? 'לא ניתן לפתוח שיחה.'); return; }
+      if (error || !convId) { Alert.alert(t('parkCheckins.error'), error ?? t('parkCheckins.cannotOpenChat')); return; }
       router.push(`/(app)/chat/${convId}`);
     } finally {
       if (mountedRef.current) setMessagingId(null);
@@ -123,19 +125,21 @@ export default function ParkCheckins() {
           showsVerticalScrollIndicator={false}
         >
           {/* ── title ── */}
-          <Text style={styles.title}>מי בפארק עכשיו? 🌳</Text>
+          <Text style={styles.title}>{t('parkCheckins.title')}</Text>
 
           {/* ── check-in toggle ── */}
           <Pressable
             style={[styles.toggleBtn, checkedIn && styles.toggleBtnActive, toggling && styles.toggleBtnDisabled]}
             onPress={handleToggle}
             disabled={toggling || loadingLocation}
+            accessibilityRole="button"
+            accessibilityLabel={checkedIn ? t('parkCheckins.checkOut') : t('parkCheckins.checkIn')}
           >
             {toggling ? (
               <ActivityIndicator color={colors.white} />
             ) : (
               <Text style={styles.toggleBtnText}>
-                {checkedIn ? 'אני כאן ✓  (צ׳ק-אאוט)' : 'אני בפארק עכשיו 📍'}
+                {checkedIn ? t('parkCheckins.checkOut') : t('parkCheckins.checkIn')}
               </Text>
             )}
           </Pressable>
@@ -143,13 +147,13 @@ export default function ParkCheckins() {
           {/* ── status sub-label ── */}
           {checkedIn && (
             <Text style={styles.checkedInNote}>
-              הצ׳ק-אין שלך פעיל למשך שעתיים 🐾
+              {t('parkCheckins.activeNote')}
             </Text>
           )}
 
           {/* ── list header ── */}
           <Text style={styles.sectionTitle}>
-            {loadingList ? 'טוען...' : `${nearby.length} בקרבתך`}
+            {loadingList ? t('parkCheckins.loading') : `${nearby.length} ${t('parkCheckins.nearbyCount')}`}
           </Text>
 
           {/* ── loading / empty ── */}
@@ -159,7 +163,7 @@ export default function ParkCheckins() {
 
           {!loadingLocation && !loadingList && nearby.length === 0 && (
             <Text style={styles.empty}>
-              אין כרגע בדקים בפארקים קרובים. תהיה הראשון! 🦮
+              {t('parkCheckins.empty')}
             </Text>
           )}
 
@@ -168,7 +172,7 @@ export default function ParkCheckins() {
             <View key={item.id} style={styles.card}>
               {/* avatar */}
               {item.photo_url ? (
-                <Image source={{ uri: item.photo_url }} style={styles.avatar} />
+                <Image source={{ uri: item.photo_url }} style={styles.avatar} accessibilityLabel={item.display_name} />
               ) : (
                 <View style={[styles.avatar, styles.avatarFallback]}>
                   <Text style={styles.avatarEmoji}>🐶</Text>
@@ -189,11 +193,13 @@ export default function ParkCheckins() {
                 style={[styles.msgBtn, messagingId === item.user_id && styles.msgBtnDisabled]}
                 onPress={() => handleMessage(item)}
                 disabled={messagingId === item.user_id}
+                accessibilityRole="button"
+                accessibilityLabel={t('parkCheckins.sendMessage')}
               >
                 {messagingId === item.user_id ? (
                   <ActivityIndicator color={colors.white} size="small" />
                 ) : (
-                  <Text style={styles.msgBtnText}>שלח הודעה 💬</Text>
+                  <Text style={styles.msgBtnText}>{t('parkCheckins.sendMessage')}</Text>
                 )}
               </Pressable>
             </View>
@@ -201,8 +207,8 @@ export default function ParkCheckins() {
 
           {/* ── manual refresh ── */}
           {coords && !loadingList && (
-            <Pressable style={styles.refreshBtn} onPress={() => refreshList(coords)}>
-              <Text style={styles.refreshBtnText}>רענן רשימה 🔄</Text>
+            <Pressable style={styles.refreshBtn} onPress={() => refreshList(coords)} accessibilityRole="button" accessibilityLabel={t('parkCheckins.refresh')}>
+              <Text style={styles.refreshBtnText}>{t('parkCheckins.refresh')}</Text>
             </Pressable>
           )}
         </ScrollView>

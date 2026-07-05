@@ -47,9 +47,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         >
           <Pressable
             onPress={() => { if (hideTimer.current) clearTimeout(hideTimer.current); hide(); toast.onPress?.(); }}
+            accessibilityRole="button"
+            accessibilityLabel={toast.body ? `${toast.title}. ${toast.body}` : toast.title}
+            accessibilityLiveRegion="polite"
             style={[styles.card, shadow.card]}
           >
-            <View style={styles.iconWrap}><Text style={styles.icon}>💬</Text></View>
+            <View style={styles.iconWrap} importantForAccessibility="no-hide-descendants"><Text style={styles.icon}>💬</Text></View>
             <View style={styles.textWrap}>
               <Text style={styles.title} numberOfLines={1}>{toast.title}</Text>
               {toast.body ? <Text style={styles.body} numberOfLines={1}>{toast.body}</Text> : null}

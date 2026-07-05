@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '../../src/hooks/useOnboarding';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius, shadow, gradients } from '../../src/theme';
 
 // ---------------------------------------------------------------------------
@@ -20,35 +21,15 @@ import { colors, font, radius, shadow, gradients } from '../../src/theme';
 // ---------------------------------------------------------------------------
 interface Slide {
   emoji: string;
-  title: string;
-  subtitle: string;
+  titleKey: string;
+  subtitleKey: string;
 }
 
 const SLIDES: Slide[] = [
-  {
-    emoji: '🐕',
-    title: 'מצא חברים לכלב',
-    subtitle:
-      'צור פגישות משחק (פלייד\'טים) וראה על המפה אילו כלבים פעילים עכשיו בקרבתך.',
-  },
-  {
-    emoji: '🐾',
-    title: 'הכר אנשים דרך הכלב',
-    subtitle:
-      'גלה בעלי כלבים שמתאימים לך — אישיות, גזע, ואזור — ויצור קשר בדרך הכי טבעית שיש.',
-  },
-  {
-    emoji: '🌳',
-    title: 'קהילה',
-    subtitle:
-      'הצטרף לטיולי קבוצה בפארקים, תאם עם מטיילי כלבים ומצא אירועים קהילתיים ליד הבית.',
-  },
-  {
-    emoji: '🔒',
-    title: 'פרטיות ובטיחות',
-    subtitle:
-      'מיקומך משותף רק בזמן הטיול. אפשרות חסימה ודיווח בכל עת. האפליקציה מיועדת לגילאי 18 ומעלה בלבד.',
-  },
+  { emoji: '🐕', titleKey: 'onboarding.slide1Title', subtitleKey: 'onboarding.slide1Sub' },
+  { emoji: '🐾', titleKey: 'onboarding.slide2Title', subtitleKey: 'onboarding.slide2Sub' },
+  { emoji: '🌳', titleKey: 'onboarding.slide3Title', subtitleKey: 'onboarding.slide3Sub' },
+  { emoji: '🔒', titleKey: 'onboarding.slide4Title', subtitleKey: 'onboarding.slide4Sub' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -56,6 +37,7 @@ const SLIDES: Slide[] = [
 // ---------------------------------------------------------------------------
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const { markSeen } = useOnboarding();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
@@ -86,8 +68,8 @@ export default function OnboardingScreen() {
 
       {/* ── skip link ── */}
       <View style={styles.skipRow}>
-        <Pressable onPress={finish} hitSlop={12}>
-          <Text style={styles.skipText}>דלג</Text>
+        <Pressable onPress={finish} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('onboarding.skip')}>
+          <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
         </Pressable>
       </View>
 
@@ -103,7 +85,7 @@ export default function OnboardingScreen() {
         // LTR scroll direction so swipe-left advances; content is RTL inside each slide
       >
         {SLIDES.map((slide, i) => (
-          <SlideCard key={i} slide={slide} width={width} />
+          <SlideCard key={i} slide={slide} width={width} title={t(slide.titleKey)} subtitle={t(slide.subtitleKey)} />
         ))}
       </ScrollView>
 
@@ -123,18 +105,22 @@ export default function OnboardingScreen() {
           <Pressable
             style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed]}
             onPress={finish}
+            accessibilityRole="button"
+            accessibilityLabel={t('onboarding.start')}
           >
             <LinearGradient colors={gradients.rose} style={styles.ctaGradient}>
-              <Text style={styles.ctaText}>התחל 🐾</Text>
+              <Text style={styles.ctaText}>{t('onboarding.start')} 🐾</Text>
             </LinearGradient>
           </Pressable>
         ) : (
           <Pressable
             style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed]}
             onPress={scrollToNext}
+            accessibilityRole="button"
+            accessibilityLabel={t('onboarding.next')}
           >
             <LinearGradient colors={gradients.rose} style={styles.ctaGradient}>
-              <Text style={styles.ctaText}>הבא ›</Text>
+              <Text style={styles.ctaText}>{t('onboarding.next')} ›</Text>
             </LinearGradient>
           </Pressable>
         )}
@@ -146,14 +132,14 @@ export default function OnboardingScreen() {
 // ---------------------------------------------------------------------------
 // SlideCard — individual slide
 // ---------------------------------------------------------------------------
-function SlideCard({ slide, width }: { slide: Slide; width: number }) {
+function SlideCard({ slide, width, title, subtitle }: { slide: Slide; width: number; title: string; subtitle: string }) {
   return (
     <View style={[styles.slide, { width }]}>
       <View style={[styles.emojiCircle, shadow.card]}>
         <Text style={styles.emoji}>{slide.emoji}</Text>
       </View>
-      <Text style={styles.slideTitle}>{slide.title}</Text>
-      <Text style={styles.slideSub}>{slide.subtitle}</Text>
+      <Text style={styles.slideTitle}>{title}</Text>
+      <Text style={styles.slideSub}>{subtitle}</Text>
     </View>
   );
 }

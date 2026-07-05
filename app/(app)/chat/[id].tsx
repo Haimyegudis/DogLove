@@ -8,6 +8,7 @@ import type { Message } from '../../../src/types/chat';
 import { blockUser, reportUser } from '../../../src/services/safety';
 import { rateUser } from '../../../src/services/ratings';
 import { colors, font, radius } from '../../../src/theme';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { otherInConversation, schedulePlaydate } from '../../../src/services/playdates';
 import MapPicker from '../../../src/components/MapPicker';
@@ -17,6 +18,7 @@ import type { Coords } from '../../../src/types/walk';
 export default function Chat() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const router = useRouter();
+  const { t } = useI18n();
   const { session } = useAuth();
   const userId = session!.user.id;
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,26 +31,29 @@ export default function Chat() {
 
   async function finishSchedule(d: Date, place: string) {
     const { data: otherId, error: e1 } = await otherInConversation(id);
-    if (e1) { Alert.alert('שגיאה', e1); return; }
-    if (!otherId) { Alert.alert('שגיאה', 'לא נמצא משתתף'); return; }
+    if (e1) { Alert.alert(t('chat.error'), e1); return; }
+    if (!otherId) { Alert.alert(t('chat.error'), t('chat.noParticipant')); return; }
     const { error } = await schedulePlaydate(userId, otherId, d.toISOString(), place);
-    if (error) { Alert.alert('שגיאה', error); return; }
-    Alert.alert('נקבע! 📅', 'המפגש נוסף ליומן.');
+    if (error) { Alert.alert(t('chat.error'), error); return; }
+    Alert.alert(t('chat.scheduledTitle'), t('chat.scheduledBody'));
   }
 
   function confirmSchedule(d: Date) {
     setShowDate(false);
     if (Platform.OS === 'ios') {
-      (Alert as any).prompt('מקום המפגש', 'איפה נפגשים?', (place?: string) => finishSchedule(d, place || ''));
+      (Alert as any).prompt(t('chat.meetupPlaceTitle'), t('chat.meetupPlacePrompt'), (place?: string) => finishSchedule(d, place || ''));
     } else {
       finishSchedule(d, '');
     }
   }
   const listRef = useRef<FlatList<Message>>(null);
-  const headerTitle = name ?? 'שיחה';
+  const headerTitle = name ?? t('chat.headerDefault');
 
   useEffect(() => {
-    listMessages(id).then(({ data }) => setMessages(data));
+    listMessages(id).then(({ data, error }) => {
+      if (error) { Alert.alert(t('chat.error'), error); return; }
+      setMessages(data);
+    });
     const sub = subscribeMessages(id, (m) => setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
     return () => { sub.unsubscribe(); };
   }, [id]);
@@ -58,9 +63,9 @@ export default function Chat() {
     if (!otherId) return;
     async function submit(oId: string, stars: number) {
       const { error } = await rateUser(userId, oId, stars);
-      Alert.alert(error ? 'שגיאה' : 'תודה! ⭐', error || 'הדירוג נשמר');
+      Alert.alert(error ? t('chat.error') : t('chat.rateThanksTitle'), error || t('chat.rateSaved'));
     }
-    Alert.alert('דרג את המשתמש', 'כמה כוכבים?', [
+    Alert.alert(t('chat.rateTitle'), t('chat.ratePrompt'), [
       { text: '⭐', onPress: () => submit(otherId, 1) },
       { text: '⭐⭐', onPress: () => submit(otherId, 2) },
       { text: '⭐⭐⭐', onPress: () => submit(otherId, 3) },
@@ -70,22 +75,22 @@ export default function Chat() {
   }
 
   async function openMenu() {
-    Alert.alert('אפשרויות', undefined, [
+    Alert.alert(t('chat.menuTitle'), undefined, [
       {
-        text: 'חסום משתמש',
+        text: t('chat.blockUser'),
         style: 'destructive',
         onPress: () => {
-          Alert.alert('חסום משתמש', 'האם לחסום משתמש זה?', [
-            { text: 'ביטול', style: 'cancel' },
+          Alert.alert(t('chat.blockUser'), t('chat.blockConfirm'), [
+            { text: t('common.cancel'), style: 'cancel' },
             {
-              text: 'חסום',
+              text: t('chat.blockAction'),
               style: 'destructive',
               onPress: async () => {
                 const { data: otherId, error: e1 } = await otherInConversation(id);
-                if (e1) { Alert.alert('שגיאה', e1); return; }
-                if (!otherId) { Alert.alert('שגיאה', 'לא נמצא משתתף'); return; }
+                if (e1) { Alert.alert(t('chat.error'), e1); return; }
+                if (!otherId) { Alert.alert(t('chat.error'), t('chat.noParticipant')); return; }
                 const { error } = await blockUser(userId, otherId);
-                if (error) { Alert.alert('שגיאה', error); return; }
+                if (error) { Alert.alert(t('chat.error'), error); return; }
                 router.back();
               },
             },
@@ -93,25 +98,25 @@ export default function Chat() {
         },
       },
       {
-        text: 'דווח',
+        text: t('chat.report'),
         onPress: async () => {
           const { data: otherId, error: e1 } = await otherInConversation(id);
-          if (e1) { Alert.alert('שגיאה', e1); return; }
-          if (!otherId) { Alert.alert('שגיאה', 'לא נמצא משתתף'); return; }
+          if (e1) { Alert.alert(t('chat.error'), e1); return; }
+          if (!otherId) { Alert.alert(t('chat.error'), t('chat.noParticipant')); return; }
           if ((Alert as any).prompt) {
-            (Alert as any).prompt('דווח על משתמש', 'סיבה (אופציונלי):', async (reason: string) => {
+            (Alert as any).prompt(t('chat.reportTitle'), t('chat.reportPrompt'), async (reason: string) => {
               const { error } = await reportUser(userId, otherId, reason ?? '');
-              if (error) { Alert.alert('שגיאה', error); return; }
-              Alert.alert('תודה, הדיווח התקבל');
+              if (error) { Alert.alert(t('chat.error'), error); return; }
+              Alert.alert(t('chat.reportThanks'));
             });
           } else {
             const { error } = await reportUser(userId, otherId, '');
-            if (error) { Alert.alert('שגיאה', error); return; }
-            Alert.alert('תודה, הדיווח התקבל');
+            if (error) { Alert.alert(t('chat.error'), error); return; }
+            Alert.alert(t('chat.reportThanks'));
           }
         },
       },
-      { text: 'ביטול', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   }
 
@@ -122,7 +127,7 @@ export default function Chat() {
     const { error } = await sendMessage(id, userId, body);
     if (error) {
       setText(body);
-      Alert.alert('שליחה נכשלה', error);
+      Alert.alert(t('chat.sendFailed'), error);
     }
   }
 
@@ -134,11 +139,11 @@ export default function Chat() {
   }
 
   async function sendMeetupLocation() {
-    if (!meetupCoords) { Alert.alert('בחר מיקום', 'יש לסמן מיקום על המפה תחילה.'); return; }
+    if (!meetupCoords) { Alert.alert(t('chat.pickLocationTitle'), t('chat.pickLocationBody')); return; }
     const { lat, lng } = meetupCoords;
-    const body = `📍 הצעת מקום מפגש: https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
+    const body = `${t('chat.meetupPrefix')}https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
     const { error } = await sendMessage(id, userId, body);
-    if (error) { Alert.alert('שליחה נכשלה', error); return; }
+    if (error) { Alert.alert(t('chat.sendFailed'), error); return; }
     setShowMeetup(false);
   }
 
@@ -147,16 +152,16 @@ export default function Chat() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{headerTitle}</Text>
-          <Pressable onPress={() => { setPickedDate(new Date(Date.now() + 3600_000)); setShowDate(true); }} style={styles.scheduleButton}>
-            <Text style={styles.scheduleText}>קבע מפגש 📅</Text>
+          <Pressable onPress={() => { setPickedDate(new Date(Date.now() + 3600_000)); setShowDate(true); }} style={styles.scheduleButton} accessibilityRole="button" accessibilityLabel={t('chat.schedule')}>
+            <Text style={styles.scheduleText}>{t('chat.schedule')}</Text>
           </Pressable>
-          <Pressable onPress={openRating} style={styles.rateButton}>
-            <Text style={styles.rateText}>⭐ דרג</Text>
+          <Pressable onPress={openRating} style={styles.rateButton} accessibilityRole="button" accessibilityLabel={t('chat.rate')}>
+            <Text style={styles.rateText}>{t('chat.rate')}</Text>
           </Pressable>
-          <Pressable onPress={openMenu} style={styles.menuButton}>
+          <Pressable onPress={openMenu} style={styles.menuButton} accessibilityRole="button" accessibilityLabel={t('chat.menuTitle')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Text style={styles.menuText}>⋯</Text>
           </Pressable>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable onPress={() => router.back()} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Text style={styles.backText}>‹</Text>
           </Pressable>
         </View>
@@ -177,11 +182,11 @@ export default function Chat() {
             />
             {Platform.OS === 'ios' && (
               <View style={styles.pickerActions}>
-                <Pressable onPress={() => setShowDate(false)} style={styles.cancelPickerBtn}>
-                  <Text style={styles.cancelPickerText}>ביטול</Text>
+                <Pressable onPress={() => setShowDate(false)} style={styles.cancelPickerBtn} accessibilityRole="button" accessibilityLabel={t('common.cancel')}>
+                  <Text style={styles.cancelPickerText}>{t('common.cancel')}</Text>
                 </Pressable>
-                <Pressable onPress={() => confirmSchedule(pickedDate ?? new Date(Date.now() + 3600_000))} style={styles.confirmPickerBtn}>
-                  <Text style={styles.confirmPickerText}>קבע</Text>
+                <Pressable onPress={() => confirmSchedule(pickedDate ?? new Date(Date.now() + 3600_000))} style={styles.confirmPickerBtn} accessibilityRole="button" accessibilityLabel={t('chat.confirm')}>
+                  <Text style={styles.confirmPickerText}>{t('chat.confirm')}</Text>
                 </Pressable>
               </View>
             )}
@@ -206,35 +211,35 @@ export default function Chat() {
             }}
           />
           <View style={styles.composer}>
-            <Pressable onPress={openMeetup} style={styles.meetupBtn}>
-              <Text style={styles.meetupBtnText}>📍 הצע מקום מפגש</Text>
+            <Pressable onPress={openMeetup} style={styles.meetupBtn} accessibilityRole="button" accessibilityLabel={t('chat.suggestMeetup')}>
+              <Text style={styles.meetupBtnText}>{t('chat.suggestMeetup')}</Text>
             </Pressable>
             <TextInput
               style={styles.input}
-              placeholder="הודעה…"
+              placeholder={t('chat.messagePlaceholder')}
               placeholderTextColor={colors.inkCoolSoft}
               value={text}
               onChangeText={setText}
               multiline
             />
-            <Pressable testID="send-message" onPress={onSend} style={styles.send}>
-              <Text style={styles.sendText}>שלח</Text>
+            <Pressable testID="send-message" onPress={onSend} style={styles.send} accessibilityRole="button" accessibilityLabel={t('chat.send')}>
+              <Text style={styles.sendText}>{t('chat.send')}</Text>
             </Pressable>
           </View>
 
           <Modal visible={showMeetup} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowMeetup(false)}>
             <SafeAreaView style={styles.modalSafe}>
               <View style={styles.modalHeader}>
-                <Pressable onPress={() => setShowMeetup(false)} style={styles.modalCancelBtn}>
-                  <Text style={styles.modalCancelText}>ביטול</Text>
+                <Pressable onPress={() => setShowMeetup(false)} style={styles.modalCancelBtn} accessibilityRole="button" accessibilityLabel={t('common.cancel')}>
+                  <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
                 </Pressable>
-                <Text style={styles.modalTitle}>📍 בחר מקום מפגש</Text>
+                <Text style={styles.modalTitle}>{t('chat.pickMeetupTitle')}</Text>
                 <View style={styles.modalCancelBtn} />
               </View>
               <MapPicker initial={currentCoords} onPick={(c) => setMeetupCoords(c)} />
               <View style={styles.modalFooter}>
-                <Pressable onPress={sendMeetupLocation} style={[styles.send, styles.sendFullWidth]}>
-                  <Text style={styles.sendText}>שלח מיקום</Text>
+                <Pressable onPress={sendMeetupLocation} style={[styles.send, styles.sendFullWidth]} accessibilityRole="button" accessibilityLabel={t('chat.sendLocation')}>
+                  <Text style={styles.sendText}>{t('chat.sendLocation')}</Text>
                 </Pressable>
               </View>
             </SafeAreaView>

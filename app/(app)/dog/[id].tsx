@@ -7,6 +7,7 @@ import Avatar from '../../../src/components/Avatar';
 import FormField from '../../../src/components/FormField';
 import PhotoGallery from '../../../src/components/PhotoGallery';
 import { useAuth } from '../../../src/state/AuthContext';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import { listMyDogs, createDog, updateDog, deleteDog } from '../../../src/services/dogs';
 import { listDogPhotos, addGalleryPhoto, deleteGalleryPhoto, type GalleryPhoto } from '../../../src/services/gallery';
 import { uploadImage } from '../../../src/services/storage';
@@ -16,6 +17,7 @@ import { colors, font, radius, shadow } from '../../../src/theme';
 
 export default function DogForm() {
   const router = useRouter();
+  const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
   const userId = session!.user.id;
@@ -51,8 +53,9 @@ export default function DogForm() {
       const up = await uploadImage('dog-photos', userId, uri);
       if (up.url) await addGalleryPhoto(userId, id, up.url);
     }
-    const { data } = await listDogPhotos(id);
-    setPhotos(data);
+    const { data, error } = await listDogPhotos(id);
+    if (error) Alert.alert(t('dogDetail.error'), error);
+    else setPhotos(data);
     setGalleryBusy(false);
   }
 
@@ -67,33 +70,33 @@ export default function DogForm() {
   }
 
   async function onSave() {
-    if (!name.trim()) { Alert.alert('שדה חסר', 'יש להזין שם'); return; }
-    if (!breed.trim()) { Alert.alert('שדה חסר', 'יש להזין סוג/גזע'); return; }
+    if (!name.trim()) { Alert.alert(t('dogDetail.missingField'), t('dogDetail.enterName')); return; }
+    if (!breed.trim()) { Alert.alert(t('dogDetail.missingField'), t('dogDetail.enterBreed')); return; }
     const ageNum = parseInt(age, 10);
-    if (!age.trim() || isNaN(ageNum) || ageNum < 0) { Alert.alert('גיל לא תקין', 'הזן גיל במספרים'); return; }
-    if (!photo) { Alert.alert('שדה חסר', 'יש להוסיף תמונה של הכלב'); return; }
-    if (!gender) { Alert.alert('שדה חסר', 'יש לבחור מין'); return; }
+    if (!age.trim() || isNaN(ageNum) || ageNum < 0) { Alert.alert(t('dogDetail.invalidAge'), t('dogDetail.enterAge')); return; }
+    if (!photo) { Alert.alert(t('dogDetail.missingField'), t('dogDetail.addPhoto')); return; }
+    if (!gender) { Alert.alert(t('dogDetail.missingField'), t('dogDetail.selectGender')); return; }
 
     setBusy(true);
     let photoUrl = photo;
     if (photo.startsWith('file:')) {
       const up = await uploadImage('dog-photos', userId, photo);
-      if (up.error) { setBusy(false); Alert.alert('שגיאת העלאה', up.error); return; }
+      if (up.error) { setBusy(false); Alert.alert(t('dogDetail.uploadError'), up.error); return; }
       photoUrl = up.url!;
     }
     const payload = { name: name.trim(), breed: breed.trim(), age: ageNum, size, gender, photo_url: photoUrl, bio: bio.trim() || null };
     const { error } = isNew ? await createDog(userId, payload) : await updateDog(id, payload);
     setBusy(false);
-    if (error) { Alert.alert('שמירה נכשלה', error); return; }
+    if (error) { Alert.alert(t('dogDetail.saveFailed'), error); return; }
     router.replace('/(app)/(tabs)');
   }
 
   function onDelete() {
-    Alert.alert('למחוק את הכלב?', 'הפעולה אינה הפיכה', [
-      { text: 'ביטול', style: 'cancel' },
-      { text: 'מחק', style: 'destructive', onPress: async () => {
+    Alert.alert(t('dogDetail.deleteTitle'), t('dogDetail.deleteIrreversible'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('dogDetail.delete'), style: 'destructive', onPress: async () => {
         const { error } = await deleteDog(id);
-        if (error) { Alert.alert('מחיקה נכשלה', error); return; }
+        if (error) { Alert.alert(t('dogDetail.deleteFailed'), error); return; }
         router.replace('/(app)/(tabs)');
       } },
     ]);
@@ -103,65 +106,68 @@ export default function DogForm() {
     <DogParkBackground>
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>{isNew ? 'כלב חדש 🐕' : 'עריכת כלב 🐕'}</Text>
+          <Text style={styles.title}>{isNew ? t('dogDetail.newDog') : t('dogDetail.editDog')}</Text>
 
-          <Pressable onPress={onPickPhoto} style={styles.avatarWrap}>
+          <Pressable onPress={onPickPhoto} style={styles.avatarWrap} accessibilityRole="button" accessibilityLabel={t('dogDetail.photoLabel')}>
             <Avatar uri={photo} fallback="🐶" size={110} />
-            <Text style={styles.changePhoto}>תמונת הכלב 📷</Text>
+            <Text style={styles.changePhoto}>{t('dogDetail.photoLabel')}</Text>
           </Pressable>
 
           <View style={[styles.card, shadow.card]}>
-            <FormField label="שם">
-              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="שם הכלב" placeholderTextColor={colors.inkSoft} />
+            <FormField label={t('dogDetail.name')}>
+              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t('dogDetail.namePlaceholder')} placeholderTextColor={colors.inkSoft} />
             </FormField>
-            <FormField label="סוג / גזע">
-              <TextInput style={styles.input} value={breed} onChangeText={setBreed} placeholder="לדוגמה: לברדור" placeholderTextColor={colors.inkSoft} />
+            <FormField label={t('dogDetail.breed')}>
+              <TextInput style={styles.input} value={breed} onChangeText={setBreed} placeholder={t('dogDetail.breedPlaceholder')} placeholderTextColor={colors.inkSoft} />
             </FormField>
-            <FormField label="גיל (שנים)">
+            <FormField label={t('dogDetail.age')}>
               <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="number-pad" placeholder="3" placeholderTextColor={colors.inkSoft} />
             </FormField>
-            <FormField label="גודל (אופציונלי)">
+            <FormField label={t('dogDetail.sizeOptional')}>
               <View style={styles.chips}>
                 {SIZE_OPTIONS.map((s) => (
                   <Pressable key={s.value} onPress={() => setSize(size === s.value ? null : s.value)}
+                    accessibilityRole="button" accessibilityLabel={s.label}
                     style={[styles.chip, size === s.value && styles.chipOn]}>
                     <Text style={[styles.chipText, size === s.value && styles.chipTextOn]}>{s.label}</Text>
                   </Pressable>
                 ))}
               </View>
             </FormField>
-            <FormField label="מין">
+            <FormField label={t('dogDetail.gender')}>
               <View style={styles.chips}>
                 {DOG_GENDER_OPTIONS.map((g) => (
                   <Pressable key={g.value} onPress={() => setGender(gender === g.value ? null : g.value)}
+                    accessibilityRole="button" accessibilityLabel={g.label}
                     style={[styles.chip, gender === g.value && styles.chipOn]}>
                     <Text style={[styles.chipText, gender === g.value && styles.chipTextOn]}>{g.label}</Text>
                   </Pressable>
                 ))}
               </View>
             </FormField>
-            <FormField label="תיאור (אופציונלי)">
-              <TextInput style={[styles.input, styles.multiline]} value={bio} onChangeText={setBio} placeholder="האופי, הרגלים..." placeholderTextColor={colors.inkSoft} multiline />
+            <FormField label={t('dogDetail.bioOptional')}>
+              <TextInput style={[styles.input, styles.multiline]} value={bio} onChangeText={setBio} placeholder={t('dogDetail.bioPlaceholder')} placeholderTextColor={colors.inkSoft} multiline />
             </FormField>
           </View>
 
           <Pressable testID="save-dog" disabled={busy} onPress={onSave}
+            accessibilityRole="button" accessibilityLabel={t('dogDetail.save')}
             style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed]}>
-            <Text style={styles.ctaText}>{busy ? 'שומר…' : 'שמירה 🐾'}</Text>
+            <Text style={styles.ctaText}>{busy ? t('dogDetail.saving') : t('dogDetail.save')}</Text>
           </Pressable>
 
           {!isNew && (
             <>
               <View style={[styles.card, shadow.card]}>
-                <Text style={styles.galleryTitle}>הגלריה של {name || 'הכלב'} 📸</Text>
+                <Text style={styles.galleryTitle}>{t('dogDetail.galleryOf')} {name || t('dogDetail.theDog')} 📸</Text>
                 <PhotoGallery photos={photos} editable busy={galleryBusy} onAdd={onAddPhotos} onDelete={onDeletePhoto} />
               </View>
 
-              <Pressable onPress={() => router.push('/(app)/dog-health/' + id)} style={styles.healthBtn}>
-                <Text style={styles.healthBtnText}>💉 בריאות וחיסונים</Text>
+              <Pressable onPress={() => router.push('/(app)/dog-health/' + id)} style={styles.healthBtn} accessibilityRole="button" accessibilityLabel={t('dogDetail.health')}>
+                <Text style={styles.healthBtnText}>{t('dogDetail.health')}</Text>
               </Pressable>
-              <Pressable onPress={onDelete} style={styles.deleteBtn}>
-                <Text style={styles.deleteText}>מחיקת הכלב</Text>
+              <Pressable onPress={onDelete} style={styles.deleteBtn} accessibilityRole="button" accessibilityLabel={t('dogDetail.deleteDog')}>
+                <Text style={styles.deleteText}>{t('dogDetail.deleteDog')}</Text>
               </Pressable>
             </>
           )}

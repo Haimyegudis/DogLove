@@ -13,7 +13,12 @@ type Props = {
 
 export default function DogCard({ photo, name, breed, subtitle, onPress, right }: Props) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, shadow.card, pressed && onPress && styles.pressed]}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={`${name}, ${breed}${subtitle ? ` · ${subtitle}` : ''}`}
+      style={({ pressed }) => [styles.card, shadow.card, pressed && onPress && styles.pressed]}
+    >
       <Avatar uri={photo} fallback="🐶" size={56} />
       <View style={styles.info}>
         <Text style={styles.name}>{name}</Text>

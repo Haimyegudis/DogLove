@@ -3,10 +3,12 @@ import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { colors, font } from '../../src/theme';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { myWalkStats } from '../../src/services/stats';
 import type { WalkStats } from '../../src/types/stats';
 
 export default function WalkStatsScreen() {
+  const { t } = useI18n();
   const [stats, setStats] = useState<WalkStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,18 +29,18 @@ export default function WalkStatsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>הסטטיסטיקות שלי</Text>
+        <Text style={styles.title}>{t('walkStats.title')}</Text>
         {loading ? (
           <ActivityIndicator size="large" color={colors.rose} style={styles.loader} />
         ) : stats === null ? (
-          <Text style={styles.empty}>אין נתונים עדיין</Text>
+          <Text style={styles.empty}>{t('walkStats.empty')}</Text>
         ) : (
           <View style={styles.grid}>
-            <StatCard emoji="🐾" label="סה״כ טיולים" value={String(stats.total_walks)} accent={colors.rose} />
-            <StatCard emoji="🛣️" label="ק״מ כולל" value={stats.total_km.toFixed(1)} accent={colors.purple} />
-            <StatCard emoji="📅" label="השבוע" value={String(stats.week_walks)} accent={colors.green} />
-            <StatCard emoji="⏱️" label="דקות סה״כ" value={String(stats.total_minutes)} accent={colors.sky} />
-            <StatCard emoji="🔥" label="ימי רצף" value={String(stats.streak_days)} accent={colors.coralDeep} />
+            <StatCard emoji="🐾" label={t('walkStats.totalWalks')} value={String(stats.total_walks)} accent={colors.rose} />
+            <StatCard emoji="🛣️" label={t('walkStats.totalKm')} value={stats.total_km.toFixed(1)} accent={colors.purple} />
+            <StatCard emoji="📅" label={t('walkStats.thisWeek')} value={String(stats.week_walks)} accent={colors.green} />
+            <StatCard emoji="⏱️" label={t('walkStats.totalMinutes')} value={String(stats.total_minutes)} accent={colors.sky} />
+            <StatCard emoji="🔥" label={t('walkStats.streakDays')} value={String(stats.streak_days)} accent={colors.coralDeep} />
           </View>
         )}
       </ScrollView>

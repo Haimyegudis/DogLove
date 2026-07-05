@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/state/AuthContext';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius } from '../../src/theme';
 import { listSocialWalks, joinWalk, leaveWalk } from '../../src/services/events';
 import type { SocialWalk } from '../../src/types/event';
@@ -19,6 +20,7 @@ type WalkCardProps = {
 };
 
 function WalkCard({ walk, userId, onReload }: WalkCardProps) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
 
   async function handleToggle() {
@@ -27,7 +29,7 @@ function WalkCard({ walk, userId, onReload }: WalkCardProps) {
       const { error } = walk.i_joined
         ? await leaveWalk(walk.id, userId)
         : await joinWalk(walk.id, userId);
-      if (error) { Alert.alert('שגיאה', error); return; }
+      if (error) { Alert.alert(t('socialWalks.error'), error); return; }
       onReload();
     } finally {
       setBusy(false);
@@ -42,16 +44,18 @@ function WalkCard({ walk, userId, onReload }: WalkCardProps) {
       ) : null}
       <Text style={styles.cardDate}>{fmtDate(walk.starts_at)}</Text>
       {walk.organizer_name ? (
-        <Text style={styles.cardOrganizer}>מארגן: {walk.organizer_name}</Text>
+        <Text style={styles.cardOrganizer}>{t('socialWalks.organizer')}: {walk.organizer_name}</Text>
       ) : null}
-      <Text style={styles.cardAttendees}>👥 {walk.attendee_count} משתתפים</Text>
+      <Text style={styles.cardAttendees}>👥 {walk.attendee_count} {t('socialWalks.attendees')}</Text>
       <Pressable
         style={[styles.joinBtn, walk.i_joined && styles.leaveBtn, busy && styles.btnDisabled]}
         onPress={handleToggle}
         disabled={busy}
+        accessibilityRole="button"
+        accessibilityLabel={walk.i_joined ? t('socialWalks.leave') : t('socialWalks.join')}
       >
         <Text style={[styles.joinBtnText, walk.i_joined && styles.leaveBtnText]}>
-          {walk.i_joined ? 'בטל הצטרפות' : 'הצטרף'}
+          {walk.i_joined ? t('socialWalks.leave') : t('socialWalks.join')}
         </Text>
       </Pressable>
     </View>
@@ -60,6 +64,7 @@ function WalkCard({ walk, userId, onReload }: WalkCardProps) {
 
 export default function SocialWalks() {
   const router = useRouter();
+  const { t } = useI18n();
   const { session } = useAuth();
   const userId = session!.user.id;
 
@@ -70,7 +75,7 @@ export default function SocialWalks() {
     setLoading(true);
     try {
       const { data, error } = await listSocialWalks();
-      if (error) { Alert.alert('שגיאה', error); return; }
+      if (error) { Alert.alert(t('socialWalks.error'), error); return; }
       setWalks(data);
     } finally {
       setLoading(false);
@@ -85,17 +90,17 @@ export default function SocialWalks() {
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: 'טיולים קבוצתיים 👥' }} />
+      <Stack.Screen options={{ title: t('socialWalks.screenTitle') }} />
 
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.rose} />
-          <Text style={styles.loadingText}>טוען…</Text>
+          <Text style={styles.loadingText}>{t('socialWalks.loading')}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {walks.length === 0 ? (
-            <Text style={styles.empty}>אין טיולים קבוצתיים מתוכננים. ארגן אחד!</Text>
+            <Text style={styles.empty}>{t('socialWalks.empty')}</Text>
           ) : (
             walks.map((walk) => (
               <WalkCard key={walk.id} walk={walk} userId={userId} onReload={load} />
@@ -108,8 +113,10 @@ export default function SocialWalks() {
         <Pressable
           style={styles.organizeBtn}
           onPress={() => router.push('/(app)/new-social-walk')}
+          accessibilityRole="button"
+          accessibilityLabel={t('socialWalks.organize')}
         >
-          <Text style={styles.organizeBtnText}>+ ארגן טיול קבוצתי</Text>
+          <Text style={styles.organizeBtnText}>+ {t('socialWalks.organize')}</Text>
         </Pressable>
       </View>
     </View>

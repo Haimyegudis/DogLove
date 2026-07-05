@@ -3,6 +3,7 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { Stack, useRouter } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
 import { useAuth } from '../../src/state/AuthContext';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius, shadow } from '../../src/theme';
 import { listMyDogs } from '../../src/services/dogs';
 import { uploadImage } from '../../src/services/storage';
@@ -15,6 +16,7 @@ import type { Coords } from '../../src/types/walk';
 
 export default function ReportLost() {
   const router = useRouter();
+  const { t } = useI18n();
   const { session } = useAuth();
   const userId = session!.user.id;
 
@@ -55,11 +57,11 @@ export default function ReportLost() {
   async function handleSubmit() {
     const name = dogName.trim();
     if (!name) {
-      Alert.alert('שגיאה', 'הכנס שם כלב');
+      Alert.alert(t('reportLost.error'), t('reportLost.errorEnterName'));
       return;
     }
     if (!note.trim()) {
-      Alert.alert('שגיאה', 'הכנס הערה');
+      Alert.alert(t('reportLost.error'), t('reportLost.errorEnterNote'));
       return;
     }
 
@@ -72,7 +74,7 @@ export default function ReportLost() {
       if (photo && photo.startsWith('file:')) {
         const { url: uploaded, error: uploadError } = await uploadImage('dog-photos', userId, photo);
         if (uploadError || !uploaded) {
-          Alert.alert('שגיאה', uploadError ?? 'שגיאה בהעלאת התמונה');
+          Alert.alert(t('reportLost.error'), uploadError ?? t('reportLost.errorUpload'));
           return;
         }
         photoUrl = uploaded;
@@ -80,11 +82,11 @@ export default function ReportLost() {
 
       const { error } = await reportLostDog(selectedDogId, name, photoUrl, note.trim(), coords);
       if (error) {
-        Alert.alert('שגיאה', error);
+        Alert.alert(t('reportLost.error'), error);
         return;
       }
 
-      Alert.alert('הצלחה', 'ההתראה נשלחה לקהילה');
+      Alert.alert(t('reportLost.success'), t('reportLost.successMessage'));
       router.back();
     } finally {
       setSubmitting(false);
@@ -97,12 +99,12 @@ export default function ReportLost() {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      <Stack.Screen options={{ title: 'דווח על כלב נעדר 🚨' }} />
+      <Stack.Screen options={{ title: t('reportLost.title') }} />
 
       {/* בחר כלב שלי */}
       {dogs.length > 0 ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>הכלבים שלי</Text>
+          <Text style={styles.sectionTitle}>{t('reportLost.myDogs')}</Text>
           <View style={styles.chipsRow}>
             {dogs.map((dog) => {
               const selected = selectedDogId === dog.id;
@@ -111,6 +113,8 @@ export default function ReportLost() {
                   key={dog.id}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => handleSelectDog(dog)}
+                  accessibilityRole="button"
+                  accessibilityLabel={dog.name}
                 >
                   <Avatar uri={dog.photo_url ?? null} size={28} fallback="🐶" />
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
@@ -125,10 +129,10 @@ export default function ReportLost() {
 
       {/* שם כלב */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>שם הכלב</Text>
+        <Text style={styles.sectionTitle}>{t('reportLost.dogNameLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="שם הכלב..."
+          placeholder={t('reportLost.dogNamePlaceholder')}
           placeholderTextColor={colors.inkCoolSoft}
           value={dogName}
           onChangeText={(t) => { setDogName(t); setSelectedDogId(null); }}
@@ -138,35 +142,45 @@ export default function ReportLost() {
 
       {/* תמונה */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>תמונה (אופציונלי)</Text>
-        <Pressable style={styles.pickButton} onPress={handlePickPhoto}>
+        <Text style={styles.sectionTitle}>{t('reportLost.photoLabel')}</Text>
+        <Pressable
+          style={styles.pickButton}
+          onPress={handlePickPhoto}
+          accessibilityRole="button"
+          accessibilityLabel={photo ? t('reportLost.replacePhoto') : t('reportLost.pickPhoto')}
+        >
           <Text style={styles.pickButtonText}>
-            {photo ? 'החלף תמונה 📷' : 'בחר תמונה 📷'}
+            {photo ? t('reportLost.replacePhoto') : t('reportLost.pickPhoto')}
           </Text>
         </Pressable>
         {photo ? (
-          <Image source={{ uri: photo }} style={styles.preview} resizeMode="cover" />
+          <Image source={{ uri: photo }} style={styles.preview} resizeMode="cover" accessibilityLabel={t('reportLost.photoLabel')} />
         ) : null}
       </View>
 
       {/* מיקום על המפה */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>סמן מיקום אחרון על המפה 📍</Text>
-        <Text style={styles.locHint}>גע במפה כדי לסמן את המקום שבו נראה הכלב לאחרונה</Text>
+        <Text style={styles.sectionTitle}>{t('reportLost.locationLabel')}</Text>
+        <Text style={styles.locHint}>{t('reportLost.locationHint')}</Text>
         <View style={styles.mapBox}>
           <MapPicker initial={pin} onPick={setPin} />
         </View>
-        <Pressable style={styles.locBtn} onPress={async () => { const c = await getCurrentCoords(); if (c) setPin(c); }}>
-          <Text style={styles.locBtnText}>📍 השתמש במיקום הנוכחי</Text>
+        <Pressable
+          style={styles.locBtn}
+          onPress={async () => { const c = await getCurrentCoords(); if (c) setPin(c); }}
+          accessibilityRole="button"
+          accessibilityLabel={t('reportLost.useCurrentLocation')}
+        >
+          <Text style={styles.locBtnText}>{t('reportLost.useCurrentLocation')}</Text>
         </Pressable>
       </View>
 
       {/* הערה */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>הערה</Text>
+        <Text style={styles.sectionTitle}>{t('reportLost.noteLabel')}</Text>
         <TextInput
           style={styles.noteInput}
-          placeholder="תאר את הכלב, מיקום אחרון, פרטי קשר..."
+          placeholder={t('reportLost.notePlaceholder')}
           placeholderTextColor={colors.inkCoolSoft}
           value={note}
           onChangeText={setNote}
@@ -182,9 +196,11 @@ export default function ReportLost() {
         style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
         onPress={handleSubmit}
         disabled={submitting}
+        accessibilityRole="button"
+        accessibilityLabel={t('reportLost.submit')}
       >
         <Text style={styles.submitButtonText}>
-          {submitting ? 'שולח...' : 'שלח התראה 🚨'}
+          {submitting ? t('reportLost.submitting') : t('reportLost.submit')}
         </Text>
       </Pressable>
     </ScrollView>

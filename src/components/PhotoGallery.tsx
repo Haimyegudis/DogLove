@@ -15,9 +15,16 @@ export default function PhotoGallery({ photos, editable = false, busy = false, o
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
       {editable && (
-        <Pressable style={styles.addTile} onPress={onAdd} disabled={busy}>
-          <Text style={styles.addPlus}>{busy ? '…' : '+'}</Text>
-          <Text style={styles.addText}>הוסף</Text>
+        <Pressable
+          style={styles.addTile}
+          onPress={onAdd}
+          disabled={busy}
+          accessibilityRole="button"
+          accessibilityLabel="הוספת תמונה"
+          accessibilityState={{ disabled: busy, busy }}
+        >
+          <Text style={styles.addPlus} importantForAccessibility="no">{busy ? '…' : '+'}</Text>
+          <Text style={styles.addText} importantForAccessibility="no">הוסף</Text>
         </Pressable>
       )}
       {photos.length === 0 && !editable ? (
@@ -26,6 +33,9 @@ export default function PhotoGallery({ photos, editable = false, busy = false, o
         photos.map((p) => (
           <Pressable
             key={p.id}
+            accessibilityRole="image"
+            accessibilityLabel="תמונת כלב"
+            accessibilityHint={editable && onDelete ? 'לחיצה ארוכה למחיקת התמונה' : undefined}
             onLongPress={editable && onDelete ? () => {
               Alert.alert('למחוק תמונה?', '', [
                 { text: 'ביטול', style: 'cancel' },

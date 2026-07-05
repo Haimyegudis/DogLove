@@ -5,6 +5,7 @@ import { useFocusEffect } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
 import { listMyPlaydates, cancelPlaydate } from '../../src/services/playdates';
 import type { PlaydateRow } from '../../src/types/playdate';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius } from '../../src/theme';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -12,41 +13,42 @@ function fmt(iso: string) {
   const d = new Date(iso);
   return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-const statusLabel: Record<string, string> = { scheduled: 'מתוכנן', cancelled: 'בוטל', completed: 'הושלם' };
 
 export default function Calendar() {
+  const { t } = useI18n();
+  const statusLabel: Record<string, string> = { scheduled: t('calendar.statusScheduled'), cancelled: t('calendar.statusCancelled'), completed: t('calendar.statusCompleted') };
   const [rows, setRows] = useState<PlaydateRow[]>([]);
   const load = useCallback(() => {
-    listMyPlaydates().then(({ data, error }) => { if (error) { Alert.alert('שגיאה', error); return; } setRows(data ?? []); });
+    listMyPlaydates().then(({ data, error }) => { if (error) { Alert.alert(t('calendar.error'), error); return; } setRows(data ?? []); });
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   function onCancel(id: string) {
-    Alert.alert('לבטל את המפגש?', '', [
-      { text: 'לא', style: 'cancel' },
-      { text: 'בטל מפגש', style: 'destructive', onPress: async () => { const { error } = await cancelPlaydate(id); if (error) { Alert.alert('שגיאה', error); return; } load(); } },
+    Alert.alert(t('calendar.cancelConfirmTitle'), '', [
+      { text: t('calendar.no'), style: 'cancel' },
+      { text: t('calendar.cancelMeetup'), style: 'destructive', onPress: async () => { const { error } = await cancelPlaydate(id); if (error) { Alert.alert(t('calendar.error'), error); return; } load(); } },
     ]);
   }
 
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe}>
-        <Text style={styles.title}>יומן מפגשים 📅</Text>
+        <Text style={styles.title}>{t('calendar.title')}</Text>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {rows.length === 0 ? (
-            <Text style={styles.empty}>אין מפגשים מתוכננים. קבע מפגש מתוך צ'אט!</Text>
+            <Text style={styles.empty}>{t('calendar.empty')}</Text>
           ) : rows.map((p) => (
             <View key={p.id} style={styles.card}>
               <Avatar uri={p.other_photo} fallback="🧑" size={48} />
               <View style={styles.info}>
-                <Text style={styles.name}>{p.other_name ?? 'בעל כלב'}</Text>
+                <Text style={styles.name}>{p.other_name ?? t('calendar.ownerFallback')}</Text>
                 <Text style={styles.when}>{fmt(p.starts_at)}</Text>
                 {p.location_name ? <Text style={styles.where}>📍 {p.location_name}</Text> : null}
               </View>
               <View style={styles.rightCol}>
                 <Text style={[styles.status, p.status === 'cancelled' && styles.cancelled]}>{statusLabel[p.status] ?? p.status}</Text>
                 {p.status === 'scheduled' ? (
-                  <Pressable onPress={() => onCancel(p.id)}><Text style={styles.cancelBtn}>בטל</Text></Pressable>
+                  <Pressable onPress={() => onCancel(p.id)} accessibilityRole="button" accessibilityLabel={t('calendar.cancelMeetup')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Text style={styles.cancelBtn}>{t('calendar.cancelShort')}</Text></Pressable>
                 ) : null}
               </View>
             </View>

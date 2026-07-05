@@ -16,13 +16,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function apply(s: Session | null) {
       if (!active) return;
       setSession(s);
-      if (s?.user) {
-        await ensureProfile(s.user.id, (s.user.app_metadata as any)?.provider);
-        registerForPush(s.user.id); // best-effort; no-ops in Expo Go
+      try {
+        if (s?.user) {
+          await ensureProfile(s.user.id, (s.user.app_metadata as any)?.provider);
+          registerForPush(s.user.id); // best-effort; no-ops in Expo Go
+        }
+      } catch {
+        // A cold-start network/RLS hiccup must not wedge the app on the splash
+        // spinner — proceed to the routed screen; screens fetch their own data.
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
     }
-    getSession().then(apply);
+    getSession().then(apply).catch(() => { if (active) setLoading(false); });
     const sub = onAuthStateChange(apply);
     return () => { active = false; sub.unsubscribe(); };
   }, []);

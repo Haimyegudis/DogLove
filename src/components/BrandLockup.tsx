@@ -9,7 +9,7 @@ export default function BrandLockup({ size = 36, onLight = true }: Props) {
   return (
     <View testID="brand-lockup" style={styles.row}>
       <View style={[styles.badge, { width: size * 0.86, height: size * 0.86, borderRadius: size }]}>
-        <Text style={{ fontSize: size * 0.46 }}>🐾</Text>
+        <Text style={{ fontSize: size * 0.46 }} importantForAccessibility="no" accessibilityElementsHidden>🐾</Text>
       </View>
       <Text style={[styles.love, { fontSize: size }]}>love</Text>
       <Text style={[styles.kelev, { fontSize: size, color: onLight ? colors.brandDark : colors.white }]}>כלב</Text>

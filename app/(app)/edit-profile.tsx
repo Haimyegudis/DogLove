@@ -14,6 +14,7 @@ import { uploadImage } from '../../src/services/storage';
 import { pickSquareImage } from '../../src/lib/pickImage';
 import { isAdult } from '../../src/lib/age';
 import { GENDER_OPTIONS, Gender } from '../../src/types/profile';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius, shadow } from '../../src/theme';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -25,6 +26,7 @@ const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.
 
 export default function EditProfile() {
   const router = useRouter();
+  const { t } = useI18n();
   const { session } = useAuth();
   const userId = session!.user.id;
 
@@ -66,19 +68,19 @@ export default function EditProfile() {
   }
 
   async function onSave() {
-    if (!name.trim()) { Alert.alert('שדה חסר', 'יש להזין שם'); return; }
-    if (!dob) { Alert.alert('שדה חסר', 'יש לבחור תאריך לידה'); return; }
+    if (!name.trim()) { Alert.alert(t('editProfile.missingField'), t('editProfile.enterName')); return; }
+    if (!dob) { Alert.alert(t('editProfile.missingField'), t('editProfile.pickDob')); return; }
     const now = new Date();
     const utcToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    if (!isAdult(dob, utcToday)) { Alert.alert('הרשמה נכשלה', 'עליך להיות בן 18 ומעלה'); return; }
-    if (!gender) { Alert.alert('שדה חסר', 'יש לבחור מגדר'); return; }
-    if (!photo) { Alert.alert('שדה חסר', 'יש להוסיף תמונת פרופיל'); return; }
+    if (!isAdult(dob, utcToday)) { Alert.alert(t('editProfile.signupFailed'), t('editProfile.mustBeAdult')); return; }
+    if (!gender) { Alert.alert(t('editProfile.missingField'), t('editProfile.pickGender')); return; }
+    if (!photo) { Alert.alert(t('editProfile.missingField'), t('editProfile.addPhoto')); return; }
 
     setBusy(true);
     let photoUrl = photo;
     if (photo.startsWith('file:')) {
       const up = await uploadImage('avatars', userId, photo);
-      if (up.error) { setBusy(false); Alert.alert('שגיאת העלאה', up.error); return; }
+      if (up.error) { setBusy(false); Alert.alert(t('editProfile.uploadError'), up.error); return; }
       photoUrl = up.url!;
     }
     const { error } = await saveMyProfile(userId, {
@@ -86,7 +88,7 @@ export default function EditProfile() {
     });
     await setIntent(intent);
     setBusy(false);
-    if (error) { Alert.alert('שמירה נכשלה', error); return; }
+    if (error) { Alert.alert(t('editProfile.saveFailed'), error); return; }
     router.replace('/(app)/(tabs)');
   }
 
@@ -94,22 +96,22 @@ export default function EditProfile() {
     <DogParkBackground>
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>הפרופיל שלי</Text>
+          <Text style={styles.title}>{t('editProfile.title')}</Text>
 
-          <Pressable onPress={onPickPhoto} style={styles.avatarWrap}>
+          <Pressable onPress={onPickPhoto} style={styles.avatarWrap} accessibilityRole="button" accessibilityLabel={t('editProfile.changePhoto')}>
             <Avatar uri={photo} fallback="🧑" size={110} />
-            <Text style={styles.changePhoto}>החלף תמונה 📷</Text>
+            <Text style={styles.changePhoto}>{t('editProfile.changePhoto')} 📷</Text>
           </Pressable>
 
           <View style={[styles.card, shadow.card]}>
-            <FormField label="שם">
-              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="השם שלך" placeholderTextColor={colors.inkSoft} />
+            <FormField label={t('editProfile.nameLabel')}>
+              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t('editProfile.namePlaceholder')} placeholderTextColor={colors.inkSoft} />
             </FormField>
 
-            <FormField label="תאריך לידה">
-              <Pressable style={styles.input} onPress={() => setShowPicker(true)}>
+            <FormField label={t('editProfile.dobLabel')}>
+              <Pressable style={styles.input} onPress={() => setShowPicker(true)} accessibilityRole="button" accessibilityLabel={t('editProfile.pickDate')}>
                 <Text style={[styles.inputText, !dob && { color: colors.inkSoft }]}>
-                  {dob ? toDisplay(dob) : 'בחר תאריך'}
+                  {dob ? toDisplay(dob) : t('editProfile.pickDate')}
                 </Text>
               </Pressable>
             </FormField>
@@ -121,10 +123,11 @@ export default function EditProfile() {
               />
             )}
 
-            <FormField label="מגדר">
+            <FormField label={t('editProfile.genderLabel')}>
               <View style={styles.chips}>
                 {GENDER_OPTIONS.map((g) => (
                   <Pressable key={g.value} onPress={() => setGender(g.value)}
+                    accessibilityRole="button" accessibilityLabel={g.label}
                     style={[styles.chip, gender === g.value && styles.chipOn]}>
                     <Text style={[styles.chipText, gender === g.value && styles.chipTextOn]}>{g.label}</Text>
                   </Pressable>
@@ -132,29 +135,30 @@ export default function EditProfile() {
               </View>
             </FormField>
 
-            <FormField label="יישוב">
-              <CityPicker value={city} onChange={setCity} placeholder="עיר / מושב / קיבוץ" />
+            <FormField label={t('editProfile.cityLabel')}>
+              <CityPicker value={city} onChange={setCity} placeholder={t('editProfile.cityPlaceholder')} />
             </FormField>
 
-            <FormField label="אני מחפש/ת (אפשר כמה)">
+            <FormField label={t('editProfile.intentLabel')}>
               <View style={styles.chips}>
-                {[{ v: 'friends', l: 'חברים לכלב 🐾' }, { v: 'dates', l: 'דייטים ❤️' }, { v: 'walks', l: 'טיולים משותפים 🦮' }].map((o) => (
-                  <Pressable key={o.v} onPress={() => toggleIntent(o.v)} style={[styles.chip, intent.includes(o.v) && styles.chipOn]}>
+                {[{ v: 'friends', l: t('editProfile.intentFriends') }, { v: 'dates', l: t('editProfile.intentDates') }, { v: 'walks', l: t('editProfile.intentWalks') }].map((o) => (
+                  <Pressable key={o.v} onPress={() => toggleIntent(o.v)} accessibilityRole="button" accessibilityLabel={o.l} style={[styles.chip, intent.includes(o.v) && styles.chipOn]}>
                     <Text style={[styles.chipText, intent.includes(o.v) && styles.chipTextOn]}>{o.l}</Text>
                   </Pressable>
                 ))}
               </View>
             </FormField>
 
-            <FormField label="קצת עליי (אופציונלי)">
+            <FormField label={t('editProfile.bioLabel')}>
               <TextInput style={[styles.input, styles.multiline]} value={bio} onChangeText={setBio}
-                placeholder="ספר/י קצת..." placeholderTextColor={colors.inkSoft} multiline />
+                placeholder={t('editProfile.bioPlaceholder')} placeholderTextColor={colors.inkSoft} multiline />
             </FormField>
           </View>
 
           <Pressable testID="save-profile" disabled={busy} onPress={onSave}
+            accessibilityRole="button" accessibilityLabel={t('common.save')}
             style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed]}>
-            <Text style={styles.ctaText}>{busy ? 'שומר…' : 'שמירה 🐾'}</Text>
+            <Text style={styles.ctaText}>{busy ? t('editProfile.saving') : `${t('common.save')} 🐾`}</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>

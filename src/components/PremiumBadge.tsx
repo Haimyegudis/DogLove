@@ -9,8 +9,8 @@ interface PremiumBadgeProps {
 export function PremiumBadge({ premium }: PremiumBadgeProps) {
   if (!premium) return null;
   return (
-    <View style={styles.pill}>
-      <Text style={styles.label}>⭐ Premium</Text>
+    <View style={styles.pill} accessibilityRole="text" accessibilityLabel="חשבון פרימיום">
+      <Text style={styles.label} importantForAccessibility="no">⭐ Premium</Text>
     </View>
   );
 }

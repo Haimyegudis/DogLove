@@ -11,11 +11,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, Link } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import DogParkBackground from '../../src/components/DogParkBackground';
 import { signUpWithEmail } from '../../src/services/auth';
 import { isAdult } from '../../src/lib/age';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius, shadow } from '../../src/theme';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -31,6 +32,7 @@ function defaultDob(): Date {
 
 export default function Signup() {
   const router = useRouter();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [dob, setDob] = useState<Date | null>(null);
@@ -48,28 +50,28 @@ export default function Signup() {
   }
 
   async function onSignup() {
-    if (!email.trim()) { Alert.alert('שדה חסר', 'יש להזין אימייל'); return; }
-    if (password.length < 6) { Alert.alert('סיסמה קצרה מדי', 'לפחות 6 תווים'); return; }
-    if (!dob) { Alert.alert('שדה חסר', 'יש לבחור תאריך לידה'); return; }
+    if (!email.trim()) { Alert.alert(t('auth.missingFieldTitle'), t('auth.emailRequired')); return; }
+    if (password.length < 6) { Alert.alert(t('auth.passwordShortTitle'), t('auth.passwordShortBody')); return; }
+    if (!dob) { Alert.alert(t('auth.missingFieldTitle'), t('auth.dobRequired')); return; }
 
     const now = new Date();
     const utcToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     if (!isAdult(toISO(dob), utcToday)) {
-      Alert.alert('הרשמה נכשלה', 'עליך להיות בן 18 ומעלה כדי להירשם');
+      Alert.alert(t('auth.signupFailedTitle'), t('auth.mustBeAdult'));
       return;
     }
     if (!agreed) {
-      Alert.alert('צריך לאשר', 'יש לאשר את תנאי השימוש: גיל 18+ ושימוש במיקום ובתמונות.');
+      Alert.alert(t('auth.consentNeededTitle'), t('auth.consentNeededBody'));
       return;
     }
 
     setBusy(true);
     const { error } = await signUpWithEmail(email.trim(), password);
     setBusy(false);
-    if (error) { Alert.alert('הרשמה נכשלה', error); return; }
+    if (error) { Alert.alert(t('auth.signupFailedTitle'), error); return; }
     Alert.alert(
-      'כמעט שם! 📧',
-      'שלחנו לך מייל אימות. אשר/י את הקישור במייל ואז אפשר להתחבר.',
+      t('auth.almostThereTitle'),
+      t('auth.verifyEmailBody'),
     );
     router.replace('/(auth)/login');
   }
@@ -87,45 +89,49 @@ export default function Signup() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.hero}>
-              <Text style={styles.heroDog}>🐕</Text>
-              <Text style={styles.title}>יצירת חשבון</Text>
-              <Text style={styles.sub}>כמה פרטים קטנים ויוצאים לדרך</Text>
+              <Text style={styles.heroDog} accessibilityLabel={t('auth.title')}>🐕</Text>
+              <Text style={styles.title}>{t('auth.title')}</Text>
+              <Text style={styles.sub}>{t('auth.subtitle')}</Text>
             </View>
 
             <View style={[styles.card, shadow.card]}>
-              <Text style={styles.label}>אימייל</Text>
+              <Text style={styles.label}>{t('auth.email')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="you@example.com"
                 placeholderTextColor={colors.inkSoft}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                accessibilityLabel={t('auth.email')}
                 value={email}
                 onChangeText={setEmail}
               />
 
-              <Text style={styles.label}>סיסמה</Text>
+              <Text style={styles.label}>{t('auth.password')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="לפחות 6 תווים"
+                placeholder={t('auth.passwordPlaceholder')}
                 placeholderTextColor={colors.inkSoft}
                 secureTextEntry
+                accessibilityLabel={t('auth.password')}
                 value={password}
                 onChangeText={setPassword}
               />
 
-              <Text style={styles.label}>תאריך לידה</Text>
+              <Text style={styles.label}>{t('auth.dob')}</Text>
               <Pressable
                 testID="dob-field"
                 style={styles.input}
+                accessibilityRole="button"
+                accessibilityLabel={t('auth.dob')}
                 onPress={() => setShowPicker(true)}
               >
                 <Text style={[styles.dobText, !dob && styles.dobPlaceholder]}>
-                  {dob ? toDisplay(dob) : 'בחר תאריך (יום-חודש-שנה)'}
+                  {dob ? toDisplay(dob) : t('auth.dobPlaceholder')}
                 </Text>
                 <Text style={styles.dobIcon}>🎂</Text>
               </Pressable>
-              <Text style={styles.hint}>צריך להיות בן 18 ומעלה 🐾</Text>
+              <Text style={styles.hint}>{t('auth.ageHint')}</Text>
 
               {showPicker && (
                 <View>
@@ -138,35 +144,75 @@ export default function Signup() {
                     onChange={onPickerChange}
                   />
                   {Platform.OS === 'ios' && (
-                    <Pressable style={styles.doneBtn} onPress={() => setShowPicker(false)}>
-                      <Text style={styles.doneText}>אישור</Text>
+                    <Pressable
+                      style={styles.doneBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('auth.pickerDone')}
+                      onPress={() => setShowPicker(false)}
+                    >
+                      <Text style={styles.doneText}>{t('auth.pickerDone')}</Text>
                     </Pressable>
                   )}
                 </View>
               )}
 
-              <Pressable style={styles.consentRow} onPress={() => setAgreed((v) => !v)}>
+              <Pressable
+                style={styles.consentRow}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: agreed }}
+                accessibilityLabel={t('auth.consentText')}
+                onPress={() => setAgreed((v) => !v)}
+              >
                 <View style={[styles.checkbox, agreed && styles.checkboxOn]}>
                   {agreed ? <Text style={styles.checkmark}>✓</Text> : null}
                 </View>
                 <Text style={styles.consentText}>
-                  אני מאשר/ת שאני בן/בת 18 ומעלה, ומסכים/ה שהאפליקציה תשתמש במיקום (GPS), בתמונות ובנתונים שאשתף — לצורך מציאת כלבים, מטיילים ושירותים בקרבתי.
+                  {t('auth.consentText')}
                 </Text>
               </Pressable>
+
+              <View style={styles.legalRow}>
+                <Link href="/privacy-policy" asChild>
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={t('auth.privacyLink')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.legalLink}>{t('auth.privacyLink')}</Text>
+                  </Pressable>
+                </Link>
+                <Text style={styles.legalSep}>·</Text>
+                <Link href="/terms" asChild>
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={t('auth.termsLink')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.legalLink}>{t('auth.termsLink')}</Text>
+                  </Pressable>
+                </Link>
+              </View>
 
               <Pressable
                 testID="signup-btn"
                 disabled={busy}
+                accessibilityRole="button"
+                accessibilityLabel={t('auth.signupCta')}
                 style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed, (busy || !agreed) && styles.ctaBusy]}
                 onPress={onSignup}
               >
-                <Text style={styles.ctaText}>{busy ? 'רגע…' : 'הצטרפות 🐾'}</Text>
+                <Text style={styles.ctaText}>{busy ? t('auth.wait') : t('auth.signupCta')}</Text>
               </Pressable>
             </View>
 
-            <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.linkWrap}>
+            <Pressable
+              onPress={() => router.replace('/(auth)/login')}
+              accessibilityRole="button"
+              accessibilityLabel={t('auth.loginLink')}
+              style={styles.linkWrap}
+            >
               <Text style={styles.link}>
-                כבר יש לך חשבון? <Text style={styles.linkStrong}>התחברות</Text>
+                {t('auth.haveAccount')} <Text style={styles.linkStrong}>{t('auth.loginLink')}</Text>
               </Text>
             </Pressable>
           </ScrollView>
@@ -225,6 +271,10 @@ const styles = StyleSheet.create({
   checkboxOn: { backgroundColor: colors.coral },
   checkmark: { color: colors.white, fontSize: 15, fontFamily: font.bold },
   consentText: { flex: 1, fontFamily: font.regular, fontSize: 12, color: colors.caramel, textAlign: 'right', lineHeight: 17 },
+
+  legalRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 },
+  legalLink: { fontFamily: font.bold, fontSize: 13, color: colors.coralDeep, textDecorationLine: 'underline' },
+  legalSep: { fontFamily: font.regular, fontSize: 13, color: colors.inkSoft },
 
   cta: {
     backgroundColor: colors.coral,

@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
 import { useAuth } from '../../src/state/AuthContext';
 import { colors, font } from '../../src/theme';
-import { listFeed, reactToPost, removeReaction, setHomeLocation } from '../../src/services/feed';
+import { useI18n } from '../../src/i18n/LanguageContext';
+import { listFeed, reactToPost, removeReaction } from '../../src/services/feed';
 import { getCurrentCoords } from '../../src/services/location';
 import type { FeedPost } from '../../src/types/feed';
 import type { Coords } from '../../src/types/walk';
@@ -15,19 +16,16 @@ const EMOJIS = ['❤️', '🐾', '😍', '👏'];
 
 type PostCardProps = {
   post: FeedPost;
-  userId: string;
-  onReact: () => void;
+  onToggle: (emoji: string) => void;
 };
 
-function PostCard({ post, userId, onReact }: PostCardProps) {
-  async function handleEmoji(emoji: string) {
-    if (post.my_reaction === emoji) {
-      await removeReaction(post.post_id, userId);
-    } else {
-      await reactToPost(post.post_id, userId, emoji);
-    }
-    onReact();
+function PostCard({ post, onToggle }: PostCardProps) {
+  const { t } = useI18n();
+  function handleEmoji(emoji: string) {
+    onToggle(emoji); // parent applies the change optimistically + persists
   }
+
+  const ownerName = post.owner_name ?? t('feed.dogOwner');
 
   return (
     <View style={styles.card}>
@@ -35,9 +33,9 @@ function PostCard({ post, userId, onReact }: PostCardProps) {
       <View style={styles.authorRow}>
         <Avatar uri={post.owner_photo} size={36} fallback="🧑" />
         <View style={styles.authorInfo}>
-          <Text style={styles.authorName}>{post.owner_name ?? 'בעל כלב'}</Text>
+          <Text style={styles.authorName}>{ownerName}</Text>
           {post.dog_name ? (
-            <Text style={styles.dogName}>עם {post.dog_name} 🐕</Text>
+            <Text style={styles.dogName}>{t('feed.with')} {post.dog_name} 🐕</Text>
           ) : null}
         </View>
       </View>
@@ -49,6 +47,7 @@ function PostCard({ post, userId, onReact }: PostCardProps) {
         contentFit="cover"
         transition={150}
         cachePolicy="memory-disk"
+        accessibilityLabel={post.caption || `${t('feed.photoOf')} ${ownerName}`}
       />
 
       {/* Caption */}
@@ -57,7 +56,7 @@ function PostCard({ post, userId, onReact }: PostCardProps) {
       ) : null}
 
       {post.distance_m != null ? (
-        <Text style={styles.distance}>📍 {(post.distance_m / 1000).toFixed(1)} ק"מ ממך</Text>
+        <Text style={styles.distance}>📍 {(post.distance_m / 1000).toFixed(1)} {t('feed.kmAway')}</Text>
       ) : null}
 
       {/* Reactions row */}
@@ -70,6 +69,9 @@ function PostCard({ post, userId, onReact }: PostCardProps) {
               styles.emojiBtn,
               post.my_reaction === emoji && styles.emojiBtnActive,
             ]}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('feed.react')} ${emoji}`}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={styles.emojiText}>{emoji}</Text>
           </Pressable>
@@ -82,6 +84,7 @@ function PostCard({ post, userId, onReact }: PostCardProps) {
 
 export default function Feed() {
   const router = useRouter();
+  const { t } = useI18n();
   const { session } = useAuth();
   const userId = session!.user.id;
 
@@ -96,9 +99,10 @@ export default function Feed() {
       let c = coords;
       if (mode === 'nearby' && !c) {
         c = await getCurrentCoords();
-        if (c) { setCoords(c); setHomeLocation(c.lat, c.lng); } // stamp my home so others can find me too
+        if (c) setCoords(c); // used only to sort the feed nearby; home area is opt-in
       }
-      const { data } = await listFeed(50, mode === 'nearby' ? c : null);
+      const { data, error } = await listFeed(50, mode === 'nearby' ? c : null);
+      if (error) { Alert.alert(t('feed.error'), error); return; }
       setPosts(data);
     } finally {
       setLoading(false);
@@ -111,39 +115,56 @@ export default function Feed() {
     }, [load, sortBy]),
   );
 
+  // Optimistic reaction toggle — update the single post locally and persist,
+  // instead of reloading the entire feed (which flashed a spinner and lost scroll).
+  const toggleReaction = useCallback(async (post: FeedPost, emoji: string) => {
+    const wasActive = post.my_reaction === emoji;
+    const delta = wasActive ? -1 : post.my_reaction ? 0 : 1;
+    setPosts((prev) => prev.map((p) => p.post_id === post.post_id
+      ? { ...p, my_reaction: wasActive ? null : emoji, reaction_count: p.reaction_count + delta }
+      : p));
+    const { error } = wasActive
+      ? await removeReaction(post.post_id, userId)
+      : await reactToPost(post.post_id, userId, emoji);
+    if (error) {
+      setPosts((prev) => prev.map((p) => (p.post_id === post.post_id ? post : p))); // revert
+      Alert.alert(t('feed.error'), error);
+    }
+  }, [userId]);
+
   return (
     <View style={styles.screen}>
       <Stack.Screen
         options={{
-          title: 'גלריית הכלבים 🐾',
+          title: t('feed.title'),
           headerRight: () => (
-            <Pressable onPress={() => router.push('/(app)/new-post')}>
-              <Text style={styles.headerBtn}>+ שתף</Text>
+            <Pressable onPress={() => router.push('/(app)/new-post')} accessibilityRole="button" accessibilityLabel={t('feed.share')}>
+              <Text style={styles.headerBtn}>{t('feed.share')}</Text>
             </Pressable>
           ),
         }}
       />
 
       <View style={styles.sortRow}>
-        <Pressable onPress={() => setSortBy('recent')} style={[styles.sortChip, sortBy === 'recent' && styles.sortChipOn]}>
-          <Text style={[styles.sortText, sortBy === 'recent' && styles.sortTextOn]}>חדש</Text>
+        <Pressable onPress={() => setSortBy('recent')} style={[styles.sortChip, sortBy === 'recent' && styles.sortChipOn]} accessibilityRole="button" accessibilityLabel={t('feed.sortRecent')}>
+          <Text style={[styles.sortText, sortBy === 'recent' && styles.sortTextOn]}>{t('feed.sortRecent')}</Text>
         </Pressable>
-        <Pressable onPress={() => setSortBy('nearby')} style={[styles.sortChip, sortBy === 'nearby' && styles.sortChipOn]}>
-          <Text style={[styles.sortText, sortBy === 'nearby' && styles.sortTextOn]}>קרוב אליי 📍</Text>
+        <Pressable onPress={() => setSortBy('nearby')} style={[styles.sortChip, sortBy === 'nearby' && styles.sortChipOn]} accessibilityRole="button" accessibilityLabel={t('feed.sortNearby')}>
+          <Text style={[styles.sortText, sortBy === 'nearby' && styles.sortTextOn]}>{t('feed.sortNearby')}</Text>
         </Pressable>
       </View>
 
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.rose} />
-          <Text style={styles.loadingText}>טוען…</Text>
+          <Text style={styles.loadingText}>{t('feed.loading')}</Text>
         </View>
       ) : (
         <FlatList
           data={posts}
           keyExtractor={(item) => item.post_id}
           renderItem={({ item }) => (
-            <PostCard post={item} userId={userId} onReact={() => load(sortBy)} />
+            <PostCard post={item} onToggle={(emoji) => toggleReaction(item, emoji)} />
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
@@ -152,7 +173,7 @@ export default function Feed() {
           removeClippedSubviews
           ListEmptyComponent={
             <Text style={styles.empty}>
-              עדיין אין תמונות. היה הראשון לשתף! 📸
+              {t('feed.empty')}
             </Text>
           }
         />

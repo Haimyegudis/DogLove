@@ -5,6 +5,7 @@ import { useAuth } from '../../src/state/AuthContext';
 import { useToast } from '../../src/components/Toast';
 import { useOnboarding } from '../../src/hooks/useOnboarding';
 import { subscribeInboxMessages } from '../../src/services/chat';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font } from '../../src/theme';
 
 // Foreground "you got mail" toast: any incoming message from another user that
@@ -13,13 +14,14 @@ function MessageToastListener({ userId }: { userId: string }) {
   const { showToast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useI18n();
 
   useEffect(() => {
     const sub = subscribeInboxMessages((m) => {
       if (m.sender_id === userId) return;                 // my own message
       if (pathname?.includes(m.conversation_id)) return;  // already in this chat
       showToast({
-        title: 'הודעה חדשה 💬',
+        title: t('chat.newMessageToast'),
         body: m.body,
         onPress: () => router.push(`/(app)/chat/${m.conversation_id}`),
       });
@@ -34,6 +36,7 @@ export default function AppLayout() {
   const { session, loading } = useAuth();
   const { seen } = useOnboarding();
   const pathname = usePathname();
+  const { t } = useI18n();
 
   // Guard the signed-in group: when the session clears (e.g. sign-out),
   // bounce back to login instead of stranding the user on a stale screen.
@@ -54,38 +57,38 @@ export default function AppLayout() {
         headerTintColor: colors.rose,
         headerTitleStyle: { fontFamily: font.display, color: colors.brandDark, fontSize: 18 },
         headerShadowVisible: false,
-        headerBackTitle: 'חזרה',
+        headerBackTitle: t('common.back'),
         title: '',
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="edit-profile" options={{ title: 'הפרופיל שלי' }} />
-      <Stack.Screen name="dog/[id]" options={{ title: 'כלב' }} />
-      <Stack.Screen name="browse" options={{ title: 'הכרויות' }} />
-      <Stack.Screen name="request/[dogId]" options={{ title: 'בקשת משחק' }} />
-      <Stack.Screen name="search" options={{ title: 'חיפוש' }} />
-      <Stack.Screen name="calendar" options={{ title: 'יומן' }} />
-      <Stack.Screen name="privacy" options={{ title: 'פרטיות' }} />
+      <Stack.Screen name="edit-profile" options={{ title: t('nav.editProfile') }} />
+      <Stack.Screen name="dog/[id]" options={{ title: t('nav.dog') }} />
+      <Stack.Screen name="browse" options={{ title: t('nav.browse') }} />
+      <Stack.Screen name="request/[dogId]" options={{ title: t('nav.request') }} />
+      <Stack.Screen name="search" options={{ title: t('nav.search') }} />
+      <Stack.Screen name="calendar" options={{ title: t('nav.calendar') }} />
+      <Stack.Screen name="privacy" options={{ title: t('nav.privacy') }} />
       <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="feed" options={{ title: 'גלריה' }} />
-      <Stack.Screen name="new-post" options={{ title: 'שיתוף תמונה' }} />
-      <Stack.Screen name="lost-dogs" options={{ title: 'כלבים נעדרים' }} />
-      <Stack.Screen name="report-lost" options={{ title: 'דיווח על כלב נעדר' }} />
-      <Stack.Screen name="walk-stats" options={{ title: 'הסטטיסטיקה שלי' }} />
-      <Stack.Screen name="dog-health/[dogId]" options={{ title: 'בריאות הכלב' }} />
-      <Stack.Screen name="social-walks" options={{ title: 'טיולים קבוצתיים' }} />
-      <Stack.Screen name="new-social-walk" options={{ title: 'טיול קבוצתי חדש' }} />
-      <Stack.Screen name="walkers" options={{ title: 'מטיילי כלבים' }} />
-      <Stack.Screen name="challenges" options={{ title: 'אתגרי כושר' }} />
-      <Stack.Screen name="badges" options={{ title: 'ההישגים שלי' }} />
-      <Stack.Screen name="places" options={{ title: 'שירותים בקרבת מקום' }} />
-      <Stack.Screen name="premium" options={{ title: 'Premium' }} />
-      <Stack.Screen name="active-walkers" options={{ title: 'מטיילים פעילים' }} />
-      <Stack.Screen name="place/[id]" options={{ title: 'מקום' }} />
-      <Stack.Screen name="dog-view/[dogId]" options={{ title: 'כרטיס כלב' }} />
-      <Stack.Screen name="owner-view/[userId]" options={{ title: 'פרופיל' }} />
-      <Stack.Screen name="discover-people" options={{ title: 'הכרויות' }} />
-      <Stack.Screen name="park-checkins" options={{ title: 'מי בפארק עכשיו' }} />
+      <Stack.Screen name="feed" options={{ title: t('nav.feed') }} />
+      <Stack.Screen name="new-post" options={{ title: t('nav.newPost') }} />
+      <Stack.Screen name="lost-dogs" options={{ title: t('nav.lostDogs') }} />
+      <Stack.Screen name="report-lost" options={{ title: t('nav.reportLost') }} />
+      <Stack.Screen name="walk-stats" options={{ title: t('nav.walkStats') }} />
+      <Stack.Screen name="dog-health/[dogId]" options={{ title: t('nav.dogHealth') }} />
+      <Stack.Screen name="social-walks" options={{ title: t('nav.socialWalks') }} />
+      <Stack.Screen name="new-social-walk" options={{ title: t('nav.newSocialWalk') }} />
+      <Stack.Screen name="walkers" options={{ title: t('nav.walkers') }} />
+      <Stack.Screen name="challenges" options={{ title: t('nav.challenges') }} />
+      <Stack.Screen name="badges" options={{ title: t('nav.badges') }} />
+      <Stack.Screen name="places" options={{ title: t('nav.places') }} />
+      <Stack.Screen name="premium" options={{ title: t('nav.premium') }} />
+      <Stack.Screen name="active-walkers" options={{ title: t('nav.activeWalkers') }} />
+      <Stack.Screen name="place/[id]" options={{ title: t('nav.place') }} />
+      <Stack.Screen name="dog-view/[dogId]" options={{ title: t('nav.dogView') }} />
+      <Stack.Screen name="owner-view/[userId]" options={{ title: t('nav.ownerView') }} />
+      <Stack.Screen name="discover-people" options={{ title: t('nav.discoverPeople') }} />
+      <Stack.Screen name="park-checkins" options={{ title: t('nav.parkCheckins') }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
     </Stack>
     </>

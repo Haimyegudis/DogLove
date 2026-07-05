@@ -29,7 +29,9 @@ export const colors = {
 
   // Neutrals (warm)
   ink: '#3A2E27',
-  inkSoft: '#9A8B80',
+  // Secondary text — darkened from #9A8B80 (~3.0:1, failed WCAG AA) to #6B5D52,
+  // which is 5.84:1 on cream and 6.34:1 on white → passes AA for 13px body text.
+  inkSoft: '#6B5D52',
   white: '#FFFFFF',
   line: '#ECE0CF',
   danger: '#D7443E',
@@ -49,8 +51,12 @@ export const colors = {
   greenSoft: '#DCEFE1',
   lineCool: '#ECE0CF',     // warm hairline
   inkCool: '#3A2E27',      // body text
-  inkCoolSoft: '#9A8B80',  // secondary text
+  inkCoolSoft: '#6B5D52',  // secondary text — AA on cream (5.84:1) & white (6.34:1); was #9A8B80 (~3.0:1, failed AA)
 };
+// NOTE (contrast): `gold`/`purple` (#E8992B ≈ 2.1:1 on cream) and `rose`/`heart`
+// (#FF5D73 ≈ 2.7:1 on cream) still FAIL WCAG AA as small text colors. They are
+// kept for brand identity (badges, accents, large display) — avoid using them
+// for 13px body copy; use `inkSoft`/`ink` for readable secondary/body text.
 
 // Gradients (consumed by expo-linear-gradient `colors` prop).
 export const gradients = {

@@ -11,16 +11,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, font, gradients, radius, shadow } from '../../src/theme';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { amIPremium, setPremium } from '../../src/services/premium';
 
 const PERKS = [
-  { icon: '📍', text: 'רדיוס גילוי מורחב — מצא כלבים רחוק יותר' },
-  { icon: '❤️', text: 'ראה מי אהב את הכלב שלך' },
-  { icon: '📸', text: 'העלאת תמונות ללא הגבלה' },
-  { icon: '⭐', text: 'תג Premium בולט על הפרופיל שלך' },
+  { icon: '📍', key: 'premium.perk1' },
+  { icon: '❤️', key: 'premium.perk2' },
+  { icon: '📸', key: 'premium.perk3' },
+  { icon: '⭐', key: 'premium.perk4' },
 ];
 
 export default function Premium() {
+  const { t } = useI18n();
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,19 +37,19 @@ export default function Premium() {
     if (isPremium === null) return;
     const next = !isPremium;
     const confirmMsg = next
-      ? 'שדרג לפרימיום כעת? (ללא עלות במצב הדגמה)'
-      : 'לבטל את המנוי הפרימיום?';
-    Alert.alert(next ? 'שדרוג לפרימיום' : 'ביטול מנוי', confirmMsg, [
-      { text: 'ביטול', style: 'cancel' },
+      ? t('premium.confirmUpgradeMsg')
+      : t('premium.confirmCancelMsg');
+    Alert.alert(next ? t('premium.upgradeTitle') : t('premium.cancelTitle'), confirmMsg, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: next ? 'שדרג' : 'בטל מנוי',
+        text: next ? t('premium.upgradeAction') : t('premium.cancelSubscription'),
         style: next ? 'default' : 'destructive',
         onPress: async () => {
           setLoading(true);
           const { error } = await setPremium(next);
           setLoading(false);
           if (error) {
-            Alert.alert('שגיאה', error);
+            Alert.alert(t('premium.error'), error);
             return;
           }
           setIsPremium(next);
@@ -66,26 +68,26 @@ export default function Premium() {
           {/* Hero gradient header */}
           <LinearGradient colors={gradients.hero} style={styles.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
             <Text style={styles.heroIcon}>⭐</Text>
-            <Text style={styles.heroTitle}>כלב LOVE Premium</Text>
-            <Text style={styles.heroSub}>חווית האפליקציה הטובה ביותר לך ולכלבך</Text>
+            <Text style={styles.heroTitle}>{t('premium.heroTitle')}</Text>
+            <Text style={styles.heroSub}>{t('premium.heroSub')}</Text>
           </LinearGradient>
 
           {/* Current status pill */}
           {statusReady && (
             <View style={[styles.statusPill, isPremium ? styles.statusPremium : styles.statusFree]}>
               <Text style={[styles.statusText, isPremium ? styles.statusTextPremium : styles.statusTextFree]}>
-                {isPremium ? '⭐ אתה משתמש פרימיום' : '🐾 מצב חינמי כרגע'}
+                {isPremium ? t('premium.statusPremium') : t('premium.statusFree')}
               </Text>
             </View>
           )}
 
           {/* Perks list */}
-          <Text style={styles.section}>יתרונות Premium</Text>
+          <Text style={styles.section}>{t('premium.perksTitle')}</Text>
           <View style={styles.card}>
             {PERKS.map((perk, i) => (
               <View key={i} style={styles.perkRow}>
                 <Text style={styles.perkIcon}>{perk.icon}</Text>
-                <Text style={styles.perkText}>{perk.text}</Text>
+                <Text style={styles.perkText}>{t(perk.key)}</Text>
                 <Text style={styles.checkIcon}>✓</Text>
               </View>
             ))}
@@ -96,6 +98,8 @@ export default function Premium() {
             <Pressable
               onPress={handleToggle}
               disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel={isPremium ? t('premium.cancelSubscription') : t('premium.upgradeNow')}
               style={({ pressed }) => [
                 styles.actionBtn,
                 isPremium ? styles.actionBtnDowngrade : styles.actionBtnUpgrade,
@@ -106,7 +110,7 @@ export default function Premium() {
                 ? <ActivityIndicator color={colors.white} />
                 : (
                   <Text style={[styles.actionBtnText, isPremium && styles.actionBtnTextDowngrade]}>
-                    {isPremium ? 'בטל מנוי' : 'שדרג עכשיו ⭐'}
+                    {isPremium ? t('premium.cancelSubscription') : t('premium.upgradeNow')}
                   </Text>
                 )
               }
@@ -114,7 +118,7 @@ export default function Premium() {
           )}
 
           <Text style={styles.disclaimer}>
-            זהו מצב הדגמה — לא מתבצע חיוב אמיתי.
+            {t('premium.disclaimer')}
           </Text>
         </ScrollView>
       </SafeAreaView>

@@ -12,10 +12,12 @@ import { blockUser, reportUser } from '../../../src/services/safety';
 import { listMyDogs } from '../../../src/services/dogs';
 import type { BrowseDog } from '../../../src/types/match';
 import type { Dog } from '../../../src/types/profile';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import { colors, font, radius, shadow } from '../../../src/theme';
 
 export default function RequestPlaydate() {
   const router = useRouter();
+  const { t } = useI18n();
   const { dogId } = useLocalSearchParams<{ dogId: string }>();
   const { session } = useAuth();
   const userId = session!.user.id;
@@ -31,33 +33,33 @@ export default function RequestPlaydate() {
   }, [dogId, userId]);
 
   async function onSend() {
-    if (!fromDog) { Alert.alert('אין כלב', 'הוסף קודם פרופיל כלב.'); return; }
+    if (!fromDog) { Alert.alert(t('request.noDogTitle'), t('request.noDogBody')); return; }
     setBusy(true);
     const { error } = await sendPlaydateRequest(fromDog, dogId);
     setBusy(false);
-    if (error) { Alert.alert('שליחה נכשלה', error); return; }
-    Alert.alert('נשלח! 🐾', 'הבקשה נשלחה. תקבל עדכון כשיענו.');
+    if (error) { Alert.alert(t('request.sendFailed'), error); return; }
+    Alert.alert(t('request.sentTitle'), t('request.sentBody'));
     router.back();
   }
 
   function onSafety() {
     if (!target) return;
-    Alert.alert('דיווח וחסימה', `${target.owner_name ?? 'המשתמש'}`, [
-      { text: 'ביטול', style: 'cancel' },
+    Alert.alert(t('request.reportBlockTitle'), `${target.owner_name ?? t('request.theUser')}`, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'דווח על המשתמש',
+        text: t('request.reportUser'),
         onPress: async () => {
-          const { error } = await reportUser(userId, target.owner_id, 'דווח מתוך מסך בקשת משחק');
-          Alert.alert(error ? 'שגיאה' : 'תודה', error ?? 'הדיווח התקבל ויטופל.');
+          const { error } = await reportUser(userId, target.owner_id, t('request.reportReason'));
+          Alert.alert(error ? t('request.error') : t('request.thanks'), error ?? t('request.reportReceived'));
         },
       },
       {
-        text: 'חסום משתמש',
+        text: t('request.blockUser'),
         style: 'destructive',
         onPress: async () => {
           const { error } = await blockUser(userId, target.owner_id);
-          if (error) { Alert.alert('שגיאה', error); return; }
-          Alert.alert('נחסם', 'לא תראו עוד אחד את השני באפליקציה.');
+          if (error) { Alert.alert(t('request.error'), error); return; }
+          Alert.alert(t('request.blockedTitle'), t('request.blockedBody'));
           router.back();
         },
       },
@@ -72,20 +74,20 @@ export default function RequestPlaydate() {
             <View style={styles.targetCard}>
               <Avatar uri={target.photo_url} fallback="🐶" size={110} />
               <Text style={styles.name}>{target.name}</Text>
-              <Text style={styles.meta}>{target.breed} · {target.age} שנים</Text>
+              <Text style={styles.meta}>{target.breed} · {target.age} {t('request.years')}</Text>
               {target.owner_name ? (
                 <View style={styles.ownerRow}>
-                  <Text style={styles.owner}>הבעלים: {target.owner_name}</Text>
+                  <Text style={styles.owner}>{t('request.owner')}: {target.owner_name}</Text>
                   <VerifiedBadge userId={target.owner_id} />
                 </View>
               ) : null}
             </View>
           )}
 
-          <Text style={styles.section}>מי מבקש/ת לשחק?</Text>
+          <Text style={styles.section}>{t('request.whoAsks')}</Text>
           <View style={styles.chips}>
             {myDogs.map((d) => (
-              <Pressable key={d.id} onPress={() => setFromDog(d.id)} style={[styles.chip, fromDog === d.id && styles.chipOn]}>
+              <Pressable key={d.id} onPress={() => setFromDog(d.id)} accessibilityRole="button" accessibilityLabel={d.name} style={[styles.chip, fromDog === d.id && styles.chipOn]}>
                 <Text style={[styles.chipText, fromDog === d.id && styles.chipTextOn]}>{d.name}</Text>
               </Pressable>
             ))}
@@ -94,14 +96,15 @@ export default function RequestPlaydate() {
           {fromDog && target ? <CompatibilityBadge dogA={fromDog} dogB={dogId} /> : null}
 
           {target ? (
-            <Pressable onPress={onSafety} style={styles.safetyBtn}>
-              <Text style={styles.safetyText}>דיווח / חסימה 🚫</Text>
+            <Pressable onPress={onSafety} style={styles.safetyBtn} accessibilityRole="button" accessibilityLabel={t('request.reportBlock')}>
+              <Text style={styles.safetyText}>{t('request.reportBlock')} 🚫</Text>
             </Pressable>
           ) : null}
 
           <Pressable testID="send-request" disabled={busy} onPress={onSend}
+            accessibilityRole="button" accessibilityLabel={t('request.sendRequest')}
             style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed]}>
-            <Text style={styles.ctaText}>{busy ? 'שולח…' : 'בקשת משחק 🐾'}</Text>
+            <Text style={styles.ctaText}>{busy ? t('request.sending') : `${t('request.sendRequest')} 🐾`}</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>

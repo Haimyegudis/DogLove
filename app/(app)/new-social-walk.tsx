@@ -12,6 +12,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/state/AuthContext';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius } from '../../src/theme';
 import { createSocialWalk } from '../../src/services/events';
 
@@ -23,6 +24,7 @@ function defaultDate() {
 
 export default function NewSocialWalk() {
   const router = useRouter();
+  const { t } = useI18n();
   const { session } = useAuth();
   const userId = session!.user.id;
 
@@ -41,7 +43,7 @@ export default function NewSocialWalk() {
   async function handlePublish() {
     setError(null);
     if (!title.trim()) {
-      setError('יש להזין כותרת לטיול');
+      setError(t('newSocialWalk.titleRequired'));
       return;
     }
     setSubmitting(true);
@@ -57,8 +59,8 @@ export default function NewSocialWalk() {
         setError(svcErr);
         return;
       }
-      Alert.alert('הטיול פורסם! 🐾', 'כלבלבים ובעליהם יכולים עכשיו להצטרף', [
-        { text: 'אוקי', onPress: () => router.back() },
+      Alert.alert(t('newSocialWalk.publishedTitle'), t('newSocialWalk.publishedBody'), [
+        { text: t('newSocialWalk.ok'), onPress: () => router.back() },
       ]);
     } finally {
       setSubmitting(false);
@@ -73,10 +75,10 @@ export default function NewSocialWalk() {
     >
       {/* Title */}
       <View style={styles.field}>
-        <Text style={styles.label}>שם הטיול</Text>
+        <Text style={styles.label}>{t('newSocialWalk.nameLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="לדוגמה: טיול בוקר בפארק הירקון"
+          placeholder={t('newSocialWalk.namePlaceholder')}
           placeholderTextColor={colors.inkCoolSoft}
           value={title}
           onChangeText={setTitle}
@@ -86,10 +88,10 @@ export default function NewSocialWalk() {
 
       {/* Location */}
       <View style={styles.field}>
-        <Text style={styles.label}>איפה נפגשים?</Text>
+        <Text style={styles.label}>{t('newSocialWalk.locationLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="שם המקום או כתובת"
+          placeholder={t('newSocialWalk.locationPlaceholder')}
           placeholderTextColor={colors.inkCoolSoft}
           value={locationName}
           onChangeText={setLocationName}
@@ -99,7 +101,7 @@ export default function NewSocialWalk() {
 
       {/* Date + Time */}
       <View style={styles.field}>
-        <Text style={styles.label}>תאריך ושעה</Text>
+        <Text style={styles.label}>{t('newSocialWalk.dateTimeLabel')}</Text>
         <View style={styles.dateRow}>
           {Platform.OS === 'ios' ? (
             <DateTimePicker
@@ -114,12 +116,16 @@ export default function NewSocialWalk() {
               <Pressable
                 style={styles.dateBtn}
                 onPress={() => setShowDatePicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('newSocialWalk.pickDate')}
               >
                 <Text style={styles.dateBtnText}>{displayDate}</Text>
               </Pressable>
               <Pressable
                 style={styles.dateBtn}
                 onPress={() => setShowTimePicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('newSocialWalk.pickTime')}
               >
                 <Text style={styles.dateBtnText}>{displayTime}</Text>
               </Pressable>
@@ -166,9 +172,11 @@ export default function NewSocialWalk() {
         style={[styles.publishBtn, submitting && styles.publishBtnDisabled]}
         onPress={handlePublish}
         disabled={submitting}
+        accessibilityRole="button"
+        accessibilityLabel={t('newSocialWalk.publish')}
       >
         <Text style={styles.publishBtnText}>
-          {submitting ? 'מפרסם...' : 'פרסם טיול 🐾'}
+          {submitting ? t('newSocialWalk.publishing') : `${t('newSocialWalk.publish')} 🐾`}
         </Text>
       </Pressable>
     </ScrollView>

@@ -11,6 +11,7 @@ import { listDogPhotos, type GalleryPhoto } from '../../../src/services/gallery'
 import { startConversation } from '../../../src/services/walkers';
 import { blockUser, reportUser } from '../../../src/services/safety';
 import { useAuth } from '../../../src/state/AuthContext';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import { SIZE_OPTIONS, DOG_GENDER_OPTIONS } from '../../../src/types/profile';
 import { colors, font, radius, shadow } from '../../../src/theme';
 
@@ -19,6 +20,7 @@ const genderLabel = (g: string | null) => DOG_GENDER_OPTIONS.find((o) => o.value
 
 export default function DogView() {
   const router = useRouter();
+  const { t } = useI18n();
   const { dogId } = useLocalSearchParams<{ dogId: string }>();
   const { session } = useAuth();
   const userId = session!.user.id;
@@ -43,39 +45,39 @@ export default function DogView() {
   const onMessage = useCallback(async () => {
     if (!card) return;
     const { data, error } = await startConversation(card.owner_id);
-    if (error || !data) { Alert.alert('שגיאה', error ?? 'שגיאה'); return; }
-    router.push(`/(app)/chat/${data}?name=${encodeURIComponent(card.owner_name ?? 'בעלים')}`);
+    if (error || !data) { Alert.alert(t('dogView.error'), error ?? t('dogView.error')); return; }
+    router.push(`/(app)/chat/${data}?name=${encodeURIComponent(card.owner_name ?? t('dogView.ownerFallback'))}`);
   }, [card, router]);
 
   function onBlockReport() {
     if (!card) return;
     const ownerId = card.owner_id;
-    Alert.alert('דיווח / חסימה', undefined, [
+    Alert.alert(t('dogView.reportBlockTitle'), undefined, [
       {
-        text: 'דווח 🚩',
+        text: t('dogView.report'),
         onPress: async () => {
           const { error } = await reportUser(userId, ownerId, 'דווח מדף כלב');
-          Alert.alert(error ? 'שגיאה' : 'תודה', error || 'הדיווח התקבל');
+          Alert.alert(error ? t('dogView.error') : t('dogView.thanks'), error || t('dogView.reportReceived'));
         },
       },
       {
-        text: 'חסום 🚫',
+        text: t('dogView.block'),
         style: 'destructive',
         onPress: async () => {
           const { error } = await blockUser(userId, ownerId);
-          if (error) { Alert.alert('שגיאה', error); return; }
+          if (error) { Alert.alert(t('dogView.error'), error); return; }
           router.back();
         },
       },
-      { text: 'ביטול', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   }
 
-  if (loading) return <View style={styles.screen}><Stack.Screen options={{ title: 'כלב' }} /></View>;
+  if (loading) return <View style={styles.screen}><Stack.Screen options={{ title: t('dogView.title') }} /></View>;
   if (!card) return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: 'כלב' }} />
-      <Text style={styles.empty}>הכרטיס לא זמין (ייתכן שהפרופיל פרטי).</Text>
+      <Stack.Screen options={{ title: t('dogView.title') }} />
+      <Text style={styles.empty}>{t('dogView.unavailable')}</Text>
     </View>
   );
 
@@ -87,10 +89,10 @@ export default function DogView() {
           <View style={[styles.card, shadow.card]}>
             <Avatar uri={card.photo_url} fallback="🐶" size={120} />
             <Text style={styles.name}>{card.name}</Text>
-            <Text style={styles.meta}>{card.breed} · {card.age} שנים{card.size ? ` · ${sizeLabel(card.size)}` : ''}{card.gender ? ` · ${genderLabel(card.gender)}` : ''}</Text>
+            <Text style={styles.meta}>{card.breed} · {card.age} {t('dogView.years')}{card.size ? ` · ${sizeLabel(card.size)}` : ''}{card.gender ? ` · ${genderLabel(card.gender)}` : ''}</Text>
             {card.bio ? <Text style={styles.bio}>{card.bio}</Text> : null}
             <View style={styles.ownerRow}>
-              <Text style={styles.owner}>הבעלים: {card.owner_name ?? ''}</Text>
+              <Text style={styles.owner}>{t('dogView.owner')} {card.owner_name ?? ''}</Text>
               <VerifiedBadge userId={card.owner_id} />
             </View>
           </View>
@@ -98,16 +100,16 @@ export default function DogView() {
           {myDogId ? <CompatibilityBadge dogA={myDogId} dogB={dogId} /> : null}
 
           <View style={[styles.card, shadow.card]}>
-            <Text style={styles.galleryTitle}>גלריה 📸</Text>
-            <PhotoGallery photos={photos} emptyText="עדיין אין תמונות נוספות" />
+            <Text style={styles.galleryTitle}>{t('dogView.gallery')}</Text>
+            <PhotoGallery photos={photos} emptyText={t('dogView.noPhotos')} />
           </View>
 
-          <Pressable style={styles.msgBtn} onPress={onMessage}>
-            <Text style={styles.msgBtnText}>שלח הודעה 💬</Text>
+          <Pressable style={styles.msgBtn} onPress={onMessage} accessibilityRole="button" accessibilityLabel={t('dogView.sendMessage')}>
+            <Text style={styles.msgBtnText}>{t('dogView.sendMessage')}</Text>
           </Pressable>
 
-          <Pressable style={styles.reportBtn} onPress={onBlockReport}>
-            <Text style={styles.reportBtnText}>דיווח / חסימה 🚫</Text>
+          <Pressable style={styles.reportBtn} onPress={onBlockReport} accessibilityRole="button" accessibilityLabel={t('dogView.reportBlock')}>
+            <Text style={styles.reportBtnText}>{t('dogView.reportBlock')}</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>

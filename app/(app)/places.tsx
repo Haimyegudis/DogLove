@@ -6,12 +6,16 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { colors, font, radius, shadow } from '../../src/theme';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { getCurrentCoords } from '../../src/services/location';
+import { geocodeCity } from '../../src/services/geocode';
 import { nearbyPlaces, type Place, type PlaceKind } from '../../src/services/places';
+import type { Coords } from '../../src/types/walk';
 
 // ── Haversine distance helper ──────────────────────────────────────────────
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -58,6 +62,7 @@ interface PlaceCardProps {
 
 function PlaceCard({ place, userLat, userLng, kindConfig }: PlaceCardProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const distKm = haversineKm(userLat, userLng, place.lat, place.lng);
 
   const handlePress = () => {
@@ -68,15 +73,15 @@ function PlaceCard({ place, userLat, userLng, kindConfig }: PlaceCardProps) {
   };
 
   return (
-    <Pressable style={styles.card} onPress={handlePress} accessibilityRole="button">
+    <Pressable style={styles.card} onPress={handlePress} accessibilityRole="button" accessibilityLabel={place.name}>
       <View style={[styles.kindBadge, { backgroundColor: kindConfig.softColor }]}>
         <Text style={styles.kindEmoji}>{kindConfig.emoji}</Text>
       </View>
       <View style={styles.cardInfo}>
         <Text style={styles.placeName}>{place.name}</Text>
         <Text style={[styles.placeDistance, { color: kindConfig.color }]}>
-          {formatDistance(distKm)} ממך
-          {place.ratingCount ? `  ·  ⭐ ${place.avgStars} (${place.ratingCount})` : '  ·  אין דירוג'}
+          {formatDistance(distKm)} {t('places.fromYou')}
+          {place.ratingCount ? `  ·  ⭐ ${place.avgStars} (${place.ratingCount})` : `  ·  ${t('places.noRating')}`}
         </Text>
       </View>
       <Text style={styles.cardArrow}>‹</Text>
@@ -86,6 +91,7 @@ function PlaceCard({ place, userLat, userLng, kindConfig }: PlaceCardProps) {
 
 // ── Screen ─────────────────────────────────────────────────────────────────
 export default function PlacesScreen() {
+  const { t } = useI18n();
   const [activeKind, setActiveKind] = useState<PlaceKind>('vet');
   const [radiusKm, setRadiusKm] = useState(10);
   const [sortBy, setSortBy] = useState<'distance' | 'rating'>('distance');
@@ -94,6 +100,11 @@ export default function PlacesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
+  const [address, setAddress] = useState('');
+  const [geoBusy, setGeoBusy] = useState(false);
+  // null = use device GPS; a Coords = search around a typed address instead.
+  const [originCoords, setOriginCoords] = useState<Coords | null>(null);
+  const [originLabel, setOriginLabel] = useState<string | null>(null);
 
   const kindConfig = KINDS.find((k) => k.kind === activeKind) ?? KINDS[0];
 
@@ -110,14 +121,19 @@ export default function PlacesScreen() {
   }, [places, sortBy, userLat, userLng]);
 
   const load = useCallback(
-    async (kind: PlaceKind, km: number) => {
+    async (kind: PlaceKind, km: number, force?: Coords | 'gps') => {
       setLoading(true);
       setError(null);
       setPlaces([]);
       try {
-        const coords = await getCurrentCoords();
+        const coords =
+          force === 'gps'
+            ? await getCurrentCoords()
+            : force
+              ? force
+              : originCoords ?? (await getCurrentCoords());
         if (!coords) {
-          setError('לא ניתן לאתר מיקומך. אנא הפעל את שירותי המיקום.');
+          setError(t('places.locationError'));
           return;
         }
         setUserLat(coords.lat);
@@ -139,8 +155,31 @@ export default function PlacesScreen() {
         setLoading(false);
       }
     },
-    [],
+    [originCoords, t],
   );
+
+  const handleSearch = async () => {
+    const q = address.trim();
+    if (!q) return;
+    setGeoBusy(true);
+    setError(null);
+    const coords = await geocodeCity(q);
+    setGeoBusy(false);
+    if (!coords) {
+      setError(t('places.addressNotFound'));
+      return;
+    }
+    setOriginCoords(coords);
+    setOriginLabel(q);
+    load(activeKind, radiusKm, coords);
+  };
+
+  const handleUseMyLocation = () => {
+    setOriginCoords(null);
+    setOriginLabel(null);
+    setAddress('');
+    load(activeKind, radiusKm, 'gps');
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -160,7 +199,54 @@ export default function PlacesScreen() {
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: 'שירותים בקרבת מקום' }} />
+      <Stack.Screen options={{ title: t('places.title') }} />
+
+      {/* Address search */}
+      <View style={styles.searchWrapper}>
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            value={address}
+            onChangeText={setAddress}
+            placeholder={t('places.searchPlaceholder')}
+            placeholderTextColor={colors.inkCoolSoft}
+            returnKeyType="search"
+            onSubmitEditing={handleSearch}
+            textAlign="right"
+            accessibilityLabel={t('places.searchPlaceholder')}
+          />
+          <Pressable
+            style={[styles.searchBtn, { backgroundColor: kindConfig.color }]}
+            onPress={handleSearch}
+            disabled={geoBusy}
+            accessibilityRole="button"
+            accessibilityLabel={t('places.searchAction')}
+          >
+            {geoBusy ? (
+              <ActivityIndicator color={colors.white} size="small" />
+            ) : (
+              <Text style={styles.searchBtnText}>🔍</Text>
+            )}
+          </Pressable>
+        </View>
+        {originLabel ? (
+          <View style={styles.originRow}>
+            <Text style={styles.originText} numberOfLines={1}>
+              📍 {t('places.searchAt')}: {originLabel}
+            </Text>
+            <Pressable
+              onPress={handleUseMyLocation}
+              accessibilityRole="button"
+              accessibilityLabel={t('places.useMyLocation')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={[styles.originReset, { color: kindConfig.color }]}>
+                {t('places.useMyLocation')}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
 
       {/* Kind chips */}
       <View style={styles.chipsWrapper}>
@@ -181,6 +267,7 @@ export default function PlacesScreen() {
                 ]}
                 onPress={() => handleKindChange(k.kind)}
                 accessibilityRole="button"
+                accessibilityLabel={t('places.kind.' + k.kind)}
                 accessibilityState={{ selected: isActive }}
               >
                 <Text
@@ -189,7 +276,7 @@ export default function PlacesScreen() {
                     { color: isActive ? colors.white : k.color },
                   ]}
                 >
-                  {k.emoji} {k.label}
+                  {k.emoji} {t('places.kind.' + k.kind)}
                 </Text>
               </Pressable>
             );
@@ -199,12 +286,12 @@ export default function PlacesScreen() {
 
       {/* Radius selector */}
       <View style={styles.radiusRow}>
-        <Text style={styles.radiusLabel}>טווח:</Text>
+        <Text style={styles.radiusLabel}>{t('places.range')}</Text>
         {RADII_KM.map((km) => {
           const on = km === radiusKm;
           return (
-            <Pressable key={km} onPress={() => handleRadiusChange(km)} style={[styles.radiusChip, on && { backgroundColor: kindConfig.color, borderColor: kindConfig.color }]}>
-              <Text style={[styles.radiusChipText, on && { color: colors.white }]}>{km} ק"מ</Text>
+            <Pressable key={km} onPress={() => handleRadiusChange(km)} style={[styles.radiusChip, on && { backgroundColor: kindConfig.color, borderColor: kindConfig.color }]} accessibilityRole="button" accessibilityLabel={`${km} ${t('places.km')}`} accessibilityState={{ selected: on }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={[styles.radiusChipText, on && { color: colors.white }]}>{km} {t('places.km')}</Text>
             </Pressable>
           );
         })}
@@ -212,12 +299,12 @@ export default function PlacesScreen() {
 
       {/* Sort toggle */}
       <View style={styles.radiusRow}>
-        <Text style={styles.radiusLabel}>מיון:</Text>
-        <Pressable onPress={() => setSortBy('distance')} style={[styles.radiusChip, sortBy === 'distance' && { backgroundColor: kindConfig.color, borderColor: kindConfig.color }]}>
-          <Text style={[styles.radiusChipText, sortBy === 'distance' && { color: colors.white }]}>מרחק</Text>
+        <Text style={styles.radiusLabel}>{t('places.sort')}</Text>
+        <Pressable onPress={() => setSortBy('distance')} style={[styles.radiusChip, sortBy === 'distance' && { backgroundColor: kindConfig.color, borderColor: kindConfig.color }]} accessibilityRole="button" accessibilityLabel={t('places.sortDistance')} accessibilityState={{ selected: sortBy === 'distance' }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={[styles.radiusChipText, sortBy === 'distance' && { color: colors.white }]}>{t('places.sortDistance')}</Text>
         </Pressable>
-        <Pressable onPress={() => setSortBy('rating')} style={[styles.radiusChip, sortBy === 'rating' && { backgroundColor: kindConfig.color, borderColor: kindConfig.color }]}>
-          <Text style={[styles.radiusChipText, sortBy === 'rating' && { color: colors.white }]}>דירוג ⭐</Text>
+        <Pressable onPress={() => setSortBy('rating')} style={[styles.radiusChip, sortBy === 'rating' && { backgroundColor: kindConfig.color, borderColor: kindConfig.color }]} accessibilityRole="button" accessibilityLabel={t('places.sortRating')} accessibilityState={{ selected: sortBy === 'rating' }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={[styles.radiusChipText, sortBy === 'rating' && { color: colors.white }]}>{t('places.sortRating')}</Text>
         </Pressable>
       </View>
 
@@ -225,13 +312,13 @@ export default function PlacesScreen() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={kindConfig.color} size="large" />
-          <Text style={styles.loadingText}>מחפש בקרבתך…</Text>
+          <Text style={styles.loadingText}>{t('places.searching')}</Text>
         </View>
       ) : error ? (
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={[styles.retryBtn, { backgroundColor: kindConfig.color }]} onPress={() => load(activeKind, radiusKm)}>
-            <Text style={styles.retryBtnText}>נסה שוב</Text>
+          <Pressable style={[styles.retryBtn, { backgroundColor: kindConfig.color }]} onPress={() => load(activeKind, radiusKm)} accessibilityRole="button" accessibilityLabel={t('places.retry')}>
+            <Text style={styles.retryBtnText}>{t('places.retry')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -252,7 +339,7 @@ export default function PlacesScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              {`לא נמצאו ${kindConfig.label} ברדיוס ${radiusKm} ק"מ. נסה טווח גדול יותר 🐾`}
+              {`${t('places.emptyBefore')}${t('places.kind.' + activeKind)}${t('places.emptyRadius')}${radiusKm} ${t('places.km')}${t('places.emptyAfter')}`}
             </Text>
           }
         />
@@ -264,6 +351,46 @@ export default function PlacesScreen() {
 // ── Styles ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bgApp },
+
+  searchWrapper: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.lineCool,
+    gap: 8,
+  },
+  searchRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
+  searchInput: {
+    flex: 1,
+    height: 42,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.lineCool,
+    paddingHorizontal: 16,
+    fontFamily: font.regular,
+    fontSize: 14,
+    color: colors.brandDark,
+    backgroundColor: colors.bgApp,
+  },
+  searchBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadow.soft,
+  },
+  searchBtnText: { fontSize: 18 },
+  originRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  originText: { flex: 1, fontFamily: font.medium, fontSize: 13, color: colors.inkCoolSoft, textAlign: 'right' },
+  originReset: { fontFamily: font.bold, fontSize: 13 },
 
   chipsWrapper: {
     paddingTop: 12,

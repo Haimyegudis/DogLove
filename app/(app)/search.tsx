@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DogCard from '../../src/components/DogCard';
@@ -9,21 +9,21 @@ import { searchDogs, searchUsers } from '../../src/services/search';
 import type { BrowseDog } from '../../src/types/match';
 import type { UserResult } from '../../src/types/search';
 import { colors, font, radius } from '../../src/theme';
-
-const GENDERS = [
-  { v: null as string | null, label: 'הכל' },
-  { v: 'female', label: 'נקבה' },
-  { v: 'male', label: 'זכר' },
-];
-
-const INTENTS = [
-  { v: 'friends', label: 'חברים 🐾' },
-  { v: 'dates',   label: 'דייטים ❤️' },
-  { v: 'walks',   label: 'טיולים 🦮' },
-];
+import { useI18n } from '../../src/i18n/LanguageContext';
 
 export default function Search() {
   const router = useRouter();
+  const { t } = useI18n();
+  const GENDERS = [
+    { v: null as string | null, label: t('search.genderAll') },
+    { v: 'female', label: t('search.female') },
+    { v: 'male', label: t('search.male') },
+  ];
+  const INTENTS = [
+    { v: 'friends', label: t('search.intentFriends') },
+    { v: 'dates',   label: t('search.intentDates') },
+    { v: 'walks',   label: t('search.intentWalks') },
+  ];
   const [mode, setMode] = useState<'dogs' | 'users'>('dogs');
   const [q, setQ] = useState('');
   const [gender, setGender] = useState<string | null>(null);
@@ -33,6 +33,8 @@ export default function Search() {
   const [intent, setIntent] = useState<string[]>([]);
   const [dogs, setDogs] = useState<BrowseDog[]>([]);
   const [users, setUsers] = useState<UserResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   function toggleIntent(v: string) {
     setIntent((prev) =>
@@ -41,14 +43,20 @@ export default function Search() {
   }
 
   async function run() {
-    if (mode === 'dogs') {
-      const { data, error } = await searchDogs(q, city);
-      if (error) { Alert.alert('שגיאה', error); return; }
-      setDogs(data);
-    } else {
-      const { data, error } = await searchUsers(q, gender, minAge, maxAge, city, intent);
-      if (error) { Alert.alert('שגיאה', error); return; }
-      setUsers(data);
+    setLoading(true);
+    try {
+      if (mode === 'dogs') {
+        const { data, error } = await searchDogs(q, city);
+        if (error) { Alert.alert(t('search.error'), error); return; }
+        setDogs(data);
+      } else {
+        const { data, error } = await searchUsers(q, gender, minAge, maxAge, city, intent);
+        if (error) { Alert.alert(t('search.error'), error); return; }
+        setUsers(data);
+      }
+      setHasSearched(true);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -56,19 +64,19 @@ export default function Search() {
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>חיפוש 🔎</Text>
+          <Text style={styles.title}>{t('search.title')}</Text>
 
           <View style={styles.toggle}>
-            <Pressable onPress={() => setMode('dogs')} style={[styles.tab, mode === 'dogs' && styles.tabOn]}>
-              <Text style={[styles.tabText, mode === 'dogs' && styles.tabTextOn]}>כלבים</Text>
+            <Pressable onPress={() => setMode('dogs')} style={[styles.tab, mode === 'dogs' && styles.tabOn]} accessibilityRole="button" accessibilityLabel={t('search.tabDogs')}>
+              <Text style={[styles.tabText, mode === 'dogs' && styles.tabTextOn]}>{t('search.tabDogs')}</Text>
             </Pressable>
-            <Pressable onPress={() => setMode('users')} style={[styles.tab, mode === 'users' && styles.tabOn]}>
-              <Text style={[styles.tabText, mode === 'users' && styles.tabTextOn]}>בעלים</Text>
+            <Pressable onPress={() => setMode('users')} style={[styles.tab, mode === 'users' && styles.tabOn]} accessibilityRole="button" accessibilityLabel={t('search.tabOwners')}>
+              <Text style={[styles.tabText, mode === 'users' && styles.tabTextOn]}>{t('search.tabOwners')}</Text>
             </Pressable>
           </View>
 
           <TextInput style={styles.input}
-            placeholder={mode === 'dogs' ? 'סוג/גזע, שם כלב או שם בעלים' : 'שם בעל/ת הכלב'}
+            placeholder={mode === 'dogs' ? t('search.placeholderDogs') : t('search.placeholderOwners')}
             placeholderTextColor={colors.inkCoolSoft}
             value={q} onChangeText={setQ} onSubmitEditing={run} returnKeyType="search" />
 
@@ -77,7 +85,7 @@ export default function Search() {
               {/* Gender chips */}
               <View style={styles.chips}>
                 {GENDERS.map((g) => (
-                  <Pressable key={g.label} onPress={() => setGender(g.v)} style={[styles.chip, gender === g.v && styles.chipOn]}>
+                  <Pressable key={g.label} onPress={() => setGender(g.v)} style={[styles.chip, gender === g.v && styles.chipOn]} accessibilityRole="button" accessibilityLabel={g.label}>
                     <Text style={[styles.chipText, gender === g.v && styles.chipTextOn]}>{g.label}</Text>
                   </Pressable>
                 ))}
@@ -85,10 +93,10 @@ export default function Search() {
 
               {/* Age range */}
               <View style={styles.ageRow}>
-                <Text style={styles.ageLabel}>טווח גיל</Text>
+                <Text style={styles.ageLabel}>{t('search.ageRange')}</Text>
                 <View style={styles.ageInputs}>
                   <View style={styles.ageField}>
-                    <Text style={styles.ageHint}>עד</Text>
+                    <Text style={styles.ageHint}>{t('search.ageTo')}</Text>
                     <TextInput
                       style={styles.ageInput}
                       keyboardType="number-pad"
@@ -102,7 +110,7 @@ export default function Search() {
                   </View>
                   <Text style={styles.ageDash}>—</Text>
                   <View style={styles.ageField}>
-                    <Text style={styles.ageHint}>מ</Text>
+                    <Text style={styles.ageHint}>{t('search.ageFrom')}</Text>
                     <TextInput
                       style={styles.ageInput}
                       keyboardType="number-pad"
@@ -122,7 +130,7 @@ export default function Search() {
                 {INTENTS.map((i) => {
                   const on = intent.includes(i.v);
                   return (
-                    <Pressable key={i.v} onPress={() => toggleIntent(i.v)} style={[styles.chip, on && styles.chipOn]}>
+                    <Pressable key={i.v} onPress={() => toggleIntent(i.v)} style={[styles.chip, on && styles.chipOn]} accessibilityRole="button" accessibilityLabel={i.label}>
                       <Text style={[styles.chipText, on && styles.chipTextOn]}>{i.label}</Text>
                     </Pressable>
                   );
@@ -131,25 +139,34 @@ export default function Search() {
             </>
           )}
 
-          <CityPicker value={city} onChange={setCity} placeholder="עיר (אופציונלי)" onSubmit={run} />
+          <CityPicker value={city} onChange={setCity} placeholder={t('search.cityPlaceholder')} onSubmit={run} />
 
-          <Pressable onPress={run} style={styles.searchBtn}><Text style={styles.searchText}>חפש</Text></Pressable>
+          <Pressable onPress={run} style={styles.searchBtn} accessibilityRole="button" accessibilityLabel={t('search.searchBtn')}><Text style={styles.searchText}>{t('search.searchBtn')}</Text></Pressable>
 
-          {mode === 'dogs'
+          {loading ? (
+            <View style={styles.stateBox}>
+              <ActivityIndicator color={colors.rose} />
+              <Text style={styles.stateText}>{t('search.loading')}</Text>
+            </View>
+          ) : (mode === 'dogs'
             ? dogs.map((d) => (
                 <DogCard key={d.dog_id} photo={d.photo_url} name={d.name} breed={d.breed}
                   subtitle={d.owner_name ?? undefined} onPress={() => router.push(`/(app)/request/${d.dog_id}`)} />
               ))
             : users.map((u) => (
-                <Pressable key={u.user_id} style={styles.userRow} onPress={() => router.push('/(app)/owner-view/' + u.user_id)}>
+                <Pressable key={u.user_id} style={styles.userRow} onPress={() => router.push('/(app)/owner-view/' + u.user_id)} accessibilityRole="button" accessibilityLabel={u.display_name ?? t('search.dogOwner')}>
                   <Avatar uri={u.photo_url} fallback="🧑" size={48} />
                   <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{u.display_name ?? 'בעל כלב'}</Text>
-                    <Text style={styles.userMeta}>{u.age} · {u.gender === 'female' ? 'נקבה' : u.gender === 'male' ? 'זכר' : '—'} · {u.city ?? ''}</Text>
+                    <Text style={styles.userName}>{u.display_name ?? t('search.dogOwner')}</Text>
+                    <Text style={styles.userMeta}>{u.age} · {u.gender === 'female' ? t('search.female') : u.gender === 'male' ? t('search.male') : '—'} · {u.city ?? ''}</Text>
                   </View>
                   <Text style={styles.chevron}>‹</Text>
                 </Pressable>
-              ))}
+              )))}
+
+          {!loading && hasSearched && (mode === 'dogs' ? dogs.length === 0 : users.length === 0) && (
+            <Text style={styles.stateText}>{t('search.noResults')}</Text>
+          )}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -189,4 +206,6 @@ const styles = StyleSheet.create({
   userName: { fontFamily: font.bold, fontSize: 16, color: colors.brandDark, textAlign: 'right' },
   userMeta: { fontFamily: font.regular, fontSize: 13, color: colors.inkCoolSoft, textAlign: 'right' },
   chevron: { fontFamily: font.bold, fontSize: 22, color: colors.inkCoolSoft },
+  stateBox: { alignItems: 'center', gap: 8, marginTop: 16 },
+  stateText: { fontFamily: font.regular, fontSize: 15, color: colors.inkCoolSoft, textAlign: 'center', marginTop: 16 },
 });

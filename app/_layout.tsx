@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { I18nManager, View } from 'react-native';
+import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -15,15 +15,18 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { ToastProvider } from '../src/components/Toast';
 import { colors } from '../src/theme';
 
-if (!I18nManager.isRTL) {
-  I18nManager.allowRTL(true);
-  I18nManager.forceRTL(true);
-}
+// NOTE: We intentionally do NOT call I18nManager.forceRTL/allowRTL here.
+// This app mirrors its layout MANUALLY for Hebrew — every screen and shared
+// component hardcodes `flexDirection: 'row-reverse'`, `textAlign: 'right'`, and
+// `writingDirection: 'rtl'` on top of React Native's default LTR base. Forcing
+// native RTL would double-flip that manual mirroring (row-reverse under an
+// already-flipped base resolves back to LTR), breaking layout on native builds.
+// No runtime logic reads I18nManager.isRTL, so leaving the base as LTR is safe.
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Heebo_400Regular,
     Heebo_500Medium,
     Heebo_700Bold,
@@ -31,11 +34,15 @@ export default function RootLayout() {
     SuezOne_400Regular,
   });
 
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded]);
+  // Proceed once fonts are ready OR failed to load — a font-fetch failure on a
+  // cold start must not leave the app stuck on the cream splash (relaunch bug).
+  const ready = fontsLoaded || !!fontError;
 
-  if (!fontsLoaded) {
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+
+  if (!ready) {
     // Hold on a warm cream field until the brand font is ready.
     return <View style={{ flex: 1, backgroundColor: colors.cream }} />;
   }

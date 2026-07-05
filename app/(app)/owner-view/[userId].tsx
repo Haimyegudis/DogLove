@@ -10,17 +10,19 @@ import { listOwnerPhotos, type GalleryPhoto } from '../../../src/services/galler
 import { startConversation } from '../../../src/services/walkers';
 import { blockUser, reportUser } from '../../../src/services/safety';
 import { useAuth } from '../../../src/state/AuthContext';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import { GENDER_OPTIONS } from '../../../src/types/profile';
 import { colors, font, radius, shadow } from '../../../src/theme';
 
-const INTENT_LABEL: Record<string, string> = { friends: 'חברים 🐾', dates: 'דייטים ❤️', walks: 'טיולים 🦮' };
 const genderLabel = (g: string | null) => GENDER_OPTIONS.find((o) => o.value === g)?.label ?? '';
 
 export default function OwnerView() {
   const router = useRouter();
+  const { t } = useI18n();
   const { session } = useAuth();
   const meId = session!.user.id;
   const { userId } = useLocalSearchParams<{ userId: string }>();
+  const INTENT_LABEL: Record<string, string> = { friends: t('ownerView.intentFriends'), dates: t('ownerView.intentDates'), walks: t('ownerView.intentWalks') };
   const [owner, setOwner] = useState<OwnerCard | null>(null);
   const [dogs, setDogs] = useState<OwnerDog[]>([]);
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
@@ -37,21 +39,21 @@ export default function OwnerView() {
 
   async function onMessage() {
     const { data, error } = await startConversation(userId);
-    if (error || !data) { Alert.alert('שגיאה', error ?? 'שגיאה'); return; }
-    router.push(`/(app)/chat/${data}?name=${encodeURIComponent(owner?.display_name ?? 'בעלים')}`);
+    if (error || !data) { Alert.alert(t('ownerView.error'), error ?? t('ownerView.error')); return; }
+    router.push(`/(app)/chat/${data}?name=${encodeURIComponent(owner?.display_name ?? t('ownerView.ownerFallback'))}`);
   }
 
-  if (loading) return <View style={styles.screen}><Stack.Screen options={{ title: 'פרופיל' }} /></View>;
+  if (loading) return <View style={styles.screen}><Stack.Screen options={{ title: t('ownerView.title') }} /></View>;
   if (!owner) return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: 'פרופיל' }} />
-      <Text style={styles.empty}>הפרופיל לא זמין (ייתכן שהוא פרטי).</Text>
+      <Stack.Screen options={{ title: t('ownerView.title') }} />
+      <Text style={styles.empty}>{t('ownerView.unavailable')}</Text>
     </View>
   );
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: owner.display_name ?? 'פרופיל' }} />
+      <Stack.Screen options={{ title: owner.display_name ?? t('ownerView.title') }} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, shadow.card]}>
           <Avatar uri={owner.photo_url} fallback="🧑" size={110} />
@@ -68,28 +70,28 @@ export default function OwnerView() {
         </View>
 
         <View style={[styles.card2, shadow.card]}>
-          <Text style={styles.sectionTitle}>התמונות שלי 📸</Text>
-          <PhotoGallery photos={photos} emptyText="אין תמונות" />
+          <Text style={styles.sectionTitle}>{t('ownerView.myPhotos')}</Text>
+          <PhotoGallery photos={photos} emptyText={t('ownerView.noPhotos')} />
         </View>
 
-        <Text style={styles.sectionTitle}>הכלבים</Text>
-        {dogs.length === 0 ? <Text style={styles.empty}>אין כלבים</Text> : dogs.map((d) => (
+        <Text style={styles.sectionTitle}>{t('ownerView.dogs')}</Text>
+        {dogs.length === 0 ? <Text style={styles.empty}>{t('ownerView.noDogs')}</Text> : dogs.map((d) => (
           <DogCard key={d.dog_id} photo={d.photo_url} name={d.name} breed={d.breed}
             onPress={() => router.push('/(app)/dog-view/' + d.dog_id)} />
         ))}
 
-        <Pressable style={styles.msgBtn} onPress={onMessage}>
-          <Text style={styles.msgBtnText}>שלח הודעה 💬</Text>
+        <Pressable style={styles.msgBtn} onPress={onMessage} accessibilityRole="button" accessibilityLabel={t('ownerView.sendMessage')}>
+          <Text style={styles.msgBtnText}>{t('ownerView.sendMessage')}</Text>
         </Pressable>
 
-        <Pressable style={styles.safetyBtn} onPress={() => {
-          Alert.alert('דיווח וחסימה', owner.display_name ?? '', [
-            { text: 'ביטול', style: 'cancel' },
-            { text: 'דווח', onPress: async () => { const { error } = await reportUser(meId, userId, 'דווח מפרופיל'); Alert.alert(error ? 'שגיאה' : 'תודה', error ?? 'הדיווח התקבל.'); } },
-            { text: 'חסום', style: 'destructive', onPress: async () => { const { error } = await blockUser(meId, userId); if (error) { Alert.alert('שגיאה', error); return; } Alert.alert('נחסם', 'לא תראו עוד אחד את השני.'); router.back(); } },
+        <Pressable style={styles.safetyBtn} accessibilityRole="button" accessibilityLabel={t('ownerView.reportBlock')} onPress={() => {
+          Alert.alert(t('ownerView.reportBlockTitle'), owner.display_name ?? '', [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('ownerView.report'), onPress: async () => { const { error } = await reportUser(meId, userId, 'דווח מפרופיל'); Alert.alert(error ? t('ownerView.error') : t('ownerView.thanks'), error ?? t('ownerView.reportReceived')); } },
+            { text: t('ownerView.block'), style: 'destructive', onPress: async () => { const { error } = await blockUser(meId, userId); if (error) { Alert.alert(t('ownerView.error'), error); return; } Alert.alert(t('ownerView.blocked'), t('ownerView.blockedMsg')); router.back(); } },
           ]);
         }}>
-          <Text style={styles.safetyText}>דיווח / חסימה 🚫</Text>
+          <Text style={styles.safetyText}>{t('ownerView.reportBlock')}</Text>
         </Pressable>
       </ScrollView>
     </View>

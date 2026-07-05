@@ -16,10 +16,12 @@ import { uploadImage } from '../../src/services/storage';
 import { createPost } from '../../src/services/feed';
 import { useAuth } from '../../src/state/AuthContext';
 import { colors, font, radius } from '../../src/theme';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import type { Dog } from '../../src/types/profile';
 
 export default function NewPost() {
   const router = useRouter();
+  const { t } = useI18n();
   const { session } = useAuth();
   const userId = session!.user.id;
 
@@ -44,7 +46,7 @@ export default function NewPost() {
 
   async function handleShare() {
     if (!photo) {
-      Alert.alert('שגיאה', 'בחר תמונה קודם');
+      Alert.alert(t('newPost.error'), t('newPost.pickPhotoFirst'));
       return;
     }
 
@@ -55,7 +57,7 @@ export default function NewPost() {
       if (photo.startsWith('file:')) {
         const { url: uploaded, error: uploadError } = await uploadImage('dog-photos', userId, photo);
         if (uploadError || !uploaded) {
-          Alert.alert('שגיאה', uploadError ?? 'שגיאה בהעלאת התמונה');
+          Alert.alert(t('newPost.error'), uploadError ?? t('newPost.uploadError'));
           return;
         }
         url = uploaded;
@@ -63,7 +65,7 @@ export default function NewPost() {
 
       const { error: postError } = await createPost(userId, dogId, url, caption.trim());
       if (postError) {
-        Alert.alert('שגיאה', postError);
+        Alert.alert(t('newPost.error'), postError);
         return;
       }
 
@@ -81,10 +83,10 @@ export default function NewPost() {
     >
       {/* בחר תמונה */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>בחר תמונה</Text>
-        <Pressable style={styles.pickButton} onPress={handlePickPhoto}>
+        <Text style={styles.sectionTitle}>{t('newPost.pickPhotoTitle')}</Text>
+        <Pressable style={styles.pickButton} onPress={handlePickPhoto} accessibilityRole="button" accessibilityLabel={photo ? t('newPost.replacePhoto') : t('newPost.pickPhoto')}>
           <Text style={styles.pickButtonText}>
-            {photo ? 'החלף תמונה 📷' : 'בחר תמונה 📷'}
+            {photo ? t('newPost.replacePhoto') : t('newPost.pickPhoto')}
           </Text>
         </Pressable>
         {photo ? (
@@ -92,6 +94,7 @@ export default function NewPost() {
             source={{ uri: photo }}
             style={styles.preview}
             resizeMode="cover"
+            accessibilityLabel={t('newPost.previewLabel')}
           />
         ) : null}
       </View>
@@ -99,7 +102,7 @@ export default function NewPost() {
       {/* בחר כלב */}
       {dogs.length > 0 ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>בחר כלב 🐕</Text>
+          <Text style={styles.sectionTitle}>{t('newPost.pickDogTitle')}</Text>
           <View style={styles.chipsRow}>
             {dogs.map((dog) => {
               const selected = dogId === dog.id;
@@ -108,6 +111,8 @@ export default function NewPost() {
                   key={dog.id}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => handleSelectDog(dog.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={dog.name}
                 >
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
                     {dog.name}
@@ -121,10 +126,10 @@ export default function NewPost() {
 
       {/* כיתוב */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>כיתוב</Text>
+        <Text style={styles.sectionTitle}>{t('newPost.captionTitle')}</Text>
         <TextInput
           style={styles.captionInput}
-          placeholder="כתוב משהו על הכלב..."
+          placeholder={t('newPost.captionPlaceholder')}
           placeholderTextColor={colors.inkCoolSoft}
           value={caption}
           onChangeText={setCaption}
@@ -139,11 +144,13 @@ export default function NewPost() {
         style={[styles.shareButton, submitting && styles.shareButtonDisabled]}
         onPress={handleShare}
         disabled={submitting}
+        accessibilityRole="button"
+        accessibilityLabel={t('newPost.shareBtn')}
       >
         {submitting ? (
-          <Text style={styles.shareButtonText}>שולח...</Text>
+          <Text style={styles.shareButtonText}>{t('newPost.sending')}</Text>
         ) : (
-          <Text style={styles.shareButtonText}>שתף 🐾</Text>
+          <Text style={styles.shareButtonText}>{t('newPost.shareBtn')}</Text>
         )}
       </Pressable>
     </ScrollView>

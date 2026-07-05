@@ -57,8 +57,9 @@ export default function Home() {
       const up = await uploadImage('dog-photos', userId, uri);
       if (up.url) await addGalleryPhoto(userId, null, up.url);
     }
-    const { data } = await listOwnerPhotos(userId);
-    setPhotos(data);
+    const { data, error } = await listOwnerPhotos(userId);
+    if (error) Alert.alert(t('profile.error'), error);
+    else setPhotos(data);
     setPhotosBusy(false);
   }
 
@@ -77,10 +78,10 @@ export default function Home() {
         if (ok) coords = await getCurrentCoords();
       }
       const { error } = await setWalker(userId, value, coords);
-      if (error) { Alert.alert('שגיאה', error); return; }
+      if (error) { Alert.alert(t('profile.error'), error); return; }
       setIsWalker(value);
       if (value && !coords) {
-        Alert.alert('הופעלת כמטייל/ת', 'לא קיבלנו מיקום, אז לא תופיע בחיפוש לפי מרחק. אפשר לאשר מיקום ולהפעיל שוב.');
+        Alert.alert(t('profile.walkerOnTitle'), t('profile.walkerOnMsg'));
       }
     } finally {
       setWalkerBusy(false);
@@ -98,21 +99,21 @@ export default function Home() {
           <View style={styles.topbar}>
             <BrandLockup size={28} />
             <View style={styles.topbarActions}>
-              <Pressable onPress={() => router.push('/(app)/privacy')} style={styles.privacyBtn}>
+              <Pressable onPress={() => router.push('/(app)/privacy')} accessibilityRole="button" accessibilityLabel={t('profile.privacy')} style={styles.privacyBtn}>
                 <Text style={styles.privacyText}>{t('profile.privacy')}</Text>
               </Pressable>
-              <Pressable testID="signout-btn" onPress={signOut}><Text style={styles.signout}>{t('profile.signOut')}</Text></Pressable>
+              <Pressable testID="signout-btn" onPress={signOut} accessibilityRole="button" accessibilityLabel={t('profile.signOut')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Text style={styles.signout}>{t('profile.signOut')}</Text></Pressable>
             </View>
           </View>
 
           {incomplete ? (
-            <Pressable onPress={() => router.push('/(app)/edit-profile')} style={[styles.completeCard, shadow.card]}>
+            <Pressable onPress={() => router.push('/(app)/edit-profile')} accessibilityRole="button" accessibilityLabel={t('profile.completeTitle')} style={[styles.completeCard, shadow.card]}>
               <Text style={styles.completeEmoji}>👋</Text>
               <Text style={styles.completeTitle}>{t('profile.completeTitle')}</Text>
               <Text style={styles.completeSub}>{t('profile.completeSub')}</Text>
             </Pressable>
           ) : (
-            <Pressable onPress={() => router.push('/(app)/edit-profile')} style={[styles.ownerCard, shadow.card]}>
+            <Pressable onPress={() => router.push('/(app)/edit-profile')} accessibilityRole="button" accessibilityLabel={t('profile.edit')} style={[styles.ownerCard, shadow.card]}>
               <Avatar uri={profile!.photo_url} fallback="🧑" size={72} />
               <View style={styles.ownerInfo}>
                 <Text style={styles.ownerName}>{profile!.display_name}</Text>
@@ -125,7 +126,7 @@ export default function Home() {
           )}
 
           {!incomplete && (
-            <Pressable onPress={() => router.push('/(app)/premium')} style={styles.badgeRow}>
+            <Pressable onPress={() => router.push('/(app)/premium')} accessibilityRole="button" accessibilityLabel={t('profile.upgradeHint')} style={styles.badgeRow}>
               <VerifiedBadge userId={userId} />
               <PremiumBadge premium={premium} />
               {!premium ? <Text style={styles.upgradeHint}>{t('profile.upgradeHint')}</Text> : null}
@@ -134,8 +135,8 @@ export default function Home() {
 
           <View style={[styles.walkerCard, shadow.card]}>
             <View style={styles.walkerText}>
-              <Text style={styles.walkerTitle}>🦮 אני מטייל/ת כלבים</Text>
-              <Text style={styles.walkerSub}>אחרים יוכלו למצוא אותך בחיפוש מטיילים לפי מרחק וישלחו לך הודעה.</Text>
+              <Text style={styles.walkerTitle}>{t('profile.walkerTitle')}</Text>
+              <Text style={styles.walkerSub}>{t('profile.walkerSub')}</Text>
             </View>
             <Switch
               value={isWalker}
@@ -148,14 +149,14 @@ export default function Home() {
 
           {!incomplete && (
             <View style={[styles.photosCard, shadow.card]}>
-              <Text style={styles.photosTitle}>התמונות שלי 📸</Text>
+              <Text style={styles.photosTitle}>{t('profile.photosTitle')}</Text>
               <PhotoGallery photos={photos} editable busy={photosBusy} onAdd={onAddPhotos} onDelete={onDeletePhoto} />
             </View>
           )}
 
           <View style={styles.dogsHeader}>
             <Text style={styles.dogsTitle}>{t('profile.myDogs')}</Text>
-            <Pressable testID="add-dog" onPress={() => router.push('/(app)/dog/new')} style={styles.addBtn}>
+            <Pressable testID="add-dog" onPress={() => router.push('/(app)/dog/new')} accessibilityRole="button" accessibilityLabel={t('profile.add')} style={styles.addBtn}>
               <Text style={styles.addText}>{t('profile.add')}</Text>
             </Pressable>
           </View>
@@ -164,11 +165,11 @@ export default function Home() {
             <Text style={styles.empty}>{t('profile.noDogs')}</Text>
           ) : (
             dogs.map((d) => (
-              <Pressable key={d.id} onPress={() => router.push(`/(app)/dog/${d.id}`)} style={[styles.dogCard, shadow.card]}>
+              <Pressable key={d.id} onPress={() => router.push(`/(app)/dog/${d.id}`)} accessibilityRole="button" accessibilityLabel={d.name} style={[styles.dogCard, shadow.card]}>
                 <Avatar uri={d.photo_url} fallback="🐶" size={56} />
                 <View style={styles.dogInfo}>
                   <Text style={styles.dogName}>{d.name}</Text>
-                  <Text style={styles.dogMeta}>{d.breed} · {d.age} שנים</Text>
+                  <Text style={styles.dogMeta}>{d.breed} · {d.age} {t('profile.years')}</Text>
                 </View>
                 <Text style={styles.chevron}>‹</Text>
               </Pressable>

@@ -34,6 +34,7 @@ export default function WalkControls({ walking, radiusM, nearbyCount, onToggleWa
           <Text style={styles.dist}>{km(display)} ק"מ</Text>
           <Slider
             style={styles.slider}
+            accessibilityLabel="רדיוס חיפוש כלבים בקילומטרים"
             minimumValue={500}
             maximumValue={10000}
             step={500}
@@ -49,6 +50,9 @@ export default function WalkControls({ walking, radiusM, nearbyCount, onToggleWa
         <Pressable
           testID="toggle-walk"
           onPress={onToggleWalk}
+          accessibilityRole="button"
+          accessibilityLabel={walking ? 'סיום הליכה' : 'התחלת הליכה'}
+          accessibilityState={{ selected: walking }}
           style={({ pressed }) => [styles.cta, walking ? styles.ctaEnd : styles.ctaStart, shadow.soft, pressed && styles.pressed]}
         >
           <Text style={styles.ctaText}>{walking ? 'סיום הליכה' : 'יוצאים לטיול! 🦮'}</Text>

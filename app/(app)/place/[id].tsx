@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Linking, Alert, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { colors, font, radius, shadow } from '../../../src/theme';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import { listPlaceReviews, myPlaceReview, ratePlace, type PlaceReview, type PlaceKind } from '../../../src/services/places';
 
 const TAGS: Record<PlaceKind, string[]> = {
@@ -10,13 +11,12 @@ const TAGS: Record<PlaceKind, string[]> = {
   petshop: ['יקר', 'מחירים טובים', 'מבחר גדול', 'שירות טוב', 'חניה נוחה'],
 };
 
-const KIND_TITLE: Record<PlaceKind, string> = { park: 'גינת כלבים', vet: 'וטרינר', petshop: 'חנות' };
-
 export default function PlaceDetail() {
+  const { t } = useI18n();
   const params = useLocalSearchParams<{ id: string; kind: PlaceKind; name: string; lat: string; lng: string }>();
   const placeId = Number(params.id);
   const kind = (params.kind as PlaceKind) ?? 'park';
-  const name = params.name ?? KIND_TITLE[kind];
+  const name = params.name ?? t('place.kind.' + kind);
   const lat = Number(params.lat);
   const lng = Number(params.lng);
 
@@ -45,12 +45,12 @@ export default function PlaceDetail() {
   }
 
   async function onSave() {
-    if (stars < 1) { Alert.alert('דירוג חסר', 'בחר/י דירוג בכוכבים'); return; }
+    if (stars < 1) { Alert.alert(t('place.ratingMissingTitle'), t('place.ratingMissingBody')); return; }
     setSaving(true);
     const { error } = await ratePlace({ placeId, kind, stars, comment, tags, name, lat, lng });
     setSaving(false);
-    if (error) { Alert.alert('שמירה נכשלה', error); return; }
-    Alert.alert('תודה! ⭐', 'הדירוג נשמר.');
+    if (error) { Alert.alert(t('place.saveFailed'), error); return; }
+    Alert.alert(t('place.thanksTitle'), t('place.ratingSaved'));
     load();
   }
 
@@ -63,35 +63,35 @@ export default function PlaceDetail() {
         <View style={[styles.head, shadow.card]}>
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.sub}>
-            {KIND_TITLE[kind]} · {avg ? `⭐ ${avg} (${reviews.length})` : 'אין דירוגים עדיין'}
+            {t('place.kind.' + kind)} · {avg ? `⭐ ${avg} (${reviews.length})` : t('place.noRatingsYet')}
           </Text>
-          <Pressable style={styles.mapBtn} onPress={() => Linking.openURL(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`)}>
-            <Text style={styles.mapBtnText}>📍 פתח במפה</Text>
+          <Pressable style={styles.mapBtn} onPress={() => Linking.openURL(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`)} accessibilityRole="button" accessibilityLabel={t('place.openMap')}>
+            <Text style={styles.mapBtnText}>📍 {t('place.openMap')}</Text>
           </Pressable>
         </View>
 
         <View style={[styles.formCard, shadow.card]}>
-          <Text style={styles.formTitle}>הדירוג שלי</Text>
+          <Text style={styles.formTitle}>{t('place.myRating')}</Text>
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((n) => (
-              <Pressable key={n} onPress={() => setStars(n)} hitSlop={6}>
+              <Pressable key={n} onPress={() => setStars(n)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={`${n} ${t('place.starsLabel')}`}>
                 <Text style={[styles.star, n <= stars && styles.starOn]}>{n <= stars ? '★' : '☆'}</Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={styles.label}>מה אפיין את המקום?</Text>
+          <Text style={styles.label}>{t('place.whatCharacterized')}</Text>
           <View style={styles.tagWrap}>
-            {TAGS[kind].map((t) => (
-              <Pressable key={t} onPress={() => toggleTag(t)} style={[styles.tag, tags.includes(t) && styles.tagOn]}>
-                <Text style={[styles.tagText, tags.includes(t) && styles.tagTextOn]}>{t}</Text>
+            {TAGS[kind].map((tag) => (
+              <Pressable key={tag} onPress={() => toggleTag(tag)} style={[styles.tag, tags.includes(tag) && styles.tagOn]} accessibilityRole="button" accessibilityLabel={tag} accessibilityState={{ selected: tags.includes(tag) }}>
+                <Text style={[styles.tagText, tags.includes(tag) && styles.tagTextOn]}>{tag}</Text>
               </Pressable>
             ))}
           </View>
 
           <TextInput
             style={styles.input}
-            placeholder="ביקורת חופשית (אופציונלי)"
+            placeholder={t('place.reviewPlaceholder')}
             placeholderTextColor={colors.inkCoolSoft}
             value={comment}
             onChangeText={setComment}
@@ -99,21 +99,21 @@ export default function PlaceDetail() {
             textAlign="right"
           />
 
-          <Pressable style={styles.saveBtn} disabled={saving} onPress={onSave}>
-            <Text style={styles.saveBtnText}>{saving ? 'שומר…' : 'שמור דירוג ⭐'}</Text>
+          <Pressable style={styles.saveBtn} disabled={saving} onPress={onSave} accessibilityRole="button" accessibilityLabel={t('place.saveRating')}>
+            <Text style={styles.saveBtnText}>{saving ? t('place.saving') : t('place.saveRating')}</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.reviewsTitle}>ביקורות ({reviews.length})</Text>
+        <Text style={styles.reviewsTitle}>{t('place.reviews')} ({reviews.length})</Text>
         {loading ? (
           <ActivityIndicator color={colors.rose} style={{ marginTop: 20 }} />
         ) : reviews.length === 0 ? (
-          <Text style={styles.empty}>אין עדיין ביקורות. היה/י הראשון/ה!</Text>
+          <Text style={styles.empty}>{t('place.noReviews')}</Text>
         ) : (
           reviews.map((r, i) => (
             <View key={i} style={[styles.reviewCard, shadow.soft]}>
               <View style={styles.reviewHead}>
-                <Text style={styles.reviewer}>{r.reviewer_name ?? 'משתמש'}</Text>
+                <Text style={styles.reviewer}>{r.reviewer_name ?? t('place.user')}</Text>
                 <Text style={styles.reviewStars}>{'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)}</Text>
               </View>
               {r.tags && r.tags.length > 0 ? (

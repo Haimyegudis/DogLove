@@ -16,10 +16,12 @@ import { useRouter } from 'expo-router';
 import BrandLockup from '../../src/components/BrandLockup';
 import DogParkBackground from '../../src/components/DogParkBackground';
 import { signInWithEmail, signInWithGoogle, sendPasswordReset } from '../../src/services/auth';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius, shadow } from '../../src/theme';
 
 export default function Login() {
   const router = useRouter();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -44,11 +46,11 @@ export default function Login() {
     setBusy(true);
     const { error } = await signInWithEmail(email.trim(), password);
     setBusy(false);
-    if (error) Alert.alert('שגיאת התחברות', error);
+    if (error) Alert.alert(t('auth.loginErrorTitle'), error);
   }
   async function onGoogle() {
     const { error } = await signInWithGoogle();
-    if (error) Alert.alert('שגיאת התחברות', error);
+    if (error) Alert.alert(t('auth.loginErrorTitle'), error);
   }
 
   return (
@@ -69,7 +71,7 @@ export default function Login() {
                 <Text style={styles.badgeDog}>🐶</Text>
               </View>
               <BrandLockup size={44} />
-              <Text style={styles.tagline}>חברים חדשים לכלב שלך — כאן ועכשיו</Text>
+              <Text style={styles.tagline}>{t('auth.tagline')}</Text>
             </View>
 
             {/* Card */}
@@ -77,38 +79,42 @@ export default function Login() {
               <Pressable
                 testID="google-btn"
                 disabled={busy}
+                accessibilityRole="button"
+                accessibilityLabel={t('auth.continueGoogle')}
                 style={({ pressed }) => [styles.google, pressed && styles.pressed]}
                 onPress={onGoogle}
               >
                 <View style={styles.googleG}>
                   <Text style={styles.googleGText}>G</Text>
                 </View>
-                <Text style={styles.googleText}>המשך עם Google</Text>
+                <Text style={styles.googleText}>{t('auth.continueGoogle')}</Text>
               </Pressable>
 
               <View style={styles.divider}>
                 <View style={styles.line} />
-                <Text style={styles.or}>או 🐾</Text>
+                <Text style={styles.or}>{t('auth.or')}</Text>
                 <View style={styles.line} />
               </View>
 
-              <Text style={styles.label}>אימייל</Text>
+              <Text style={styles.label}>{t('auth.email')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="you@example.com"
                 placeholderTextColor={colors.inkSoft}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                accessibilityLabel={t('auth.email')}
                 value={email}
                 onChangeText={setEmail}
               />
 
-              <Text style={styles.label}>סיסמה</Text>
+              <Text style={styles.label}>{t('auth.password')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="••••••••"
                 placeholderTextColor={colors.inkSoft}
                 secureTextEntry
+                accessibilityLabel={t('auth.password')}
                 value={password}
                 onChangeText={setPassword}
               />
@@ -116,30 +122,39 @@ export default function Login() {
               <Pressable
                 testID="login-btn"
                 disabled={busy}
+                accessibilityRole="button"
+                accessibilityLabel={t('auth.loginCta')}
                 style={({ pressed }) => [styles.cta, shadow.soft, pressed && styles.pressed, busy && styles.ctaBusy]}
                 onPress={onEmailLogin}
               >
-                <Text style={styles.ctaText}>{busy ? 'רגע…' : 'בוא נצא לטיול 🦮'}</Text>
+                <Text style={styles.ctaText}>{busy ? t('auth.wait') : t('auth.loginCta')}</Text>
               </Pressable>
 
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('auth.forgotPassword')}
                 onPress={async () => {
                   if (!email.trim()) {
-                    Alert.alert('הזן אימייל', 'מלא/י את כתובת האימייל קודם');
+                    Alert.alert(t('auth.enterEmailTitle'), t('auth.enterEmailBody'));
                     return;
                   }
                   await sendPasswordReset(email);
-                  Alert.alert('נשלח', 'אם הכתובת קיימת, נשלח קישור לאיפוס סיסמה.');
+                  Alert.alert(t('auth.resetSentTitle'), t('auth.resetSentBody'));
                 }}
                 style={styles.forgotWrap}
               >
-                <Text style={styles.forgot}>שכחת סיסמה?</Text>
+                <Text style={styles.forgot}>{t('auth.forgotPassword')}</Text>
               </Pressable>
             </Animated.View>
 
-            <Pressable onPress={() => router.push('/(auth)/signup')} style={styles.linkWrap}>
+            <Pressable
+              onPress={() => router.push('/(auth)/signup')}
+              accessibilityRole="button"
+              accessibilityLabel={t('auth.signupLink')}
+              style={styles.linkWrap}
+            >
               <Text style={styles.link}>
-                אין לך חשבון? <Text style={styles.linkStrong}>הרשמה</Text>
+                {t('auth.noAccount')} <Text style={styles.linkStrong}>{t('auth.signupLink')}</Text>
               </Text>
             </Pressable>
           </ScrollView>

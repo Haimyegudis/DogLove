@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius } from '../../src/theme';
 import { nearbyWalkers, startConversation } from '../../src/services/walkers';
 import { requestLocationPermission, getCurrentCoords } from '../../src/services/location';
@@ -11,14 +12,15 @@ import type { Walker } from '../../src/types/walker';
 import type { Coords } from '../../src/types/walk';
 
 const RADII = [
-  { label: '1 ק״מ', m: 1000 },
-  { label: '3 ק״מ', m: 3000 },
-  { label: '5 ק״מ', m: 5000 },
-  { label: '10 ק״מ', m: 10000 },
+  { km: 1, m: 1000 },
+  { km: 3, m: 3000 },
+  { km: 5, m: 5000 },
+  { km: 10, m: 10000 },
 ];
 
 export default function Walkers() {
   const router = useRouter();
+  const { t } = useI18n();
   const [center, setCenter] = useState<Coords | null>(null);
   const [radiusM, setRadiusM] = useState(5000);
   const [cityQ, setCityQ] = useState('');
@@ -30,7 +32,7 @@ export default function Walkers() {
     setLoading(true);
     try {
       const { data, error } = await nearbyWalkers(c, rM);
-      if (error) { Alert.alert('שגיאה', error); return; }
+      if (error) { Alert.alert(t('walkers.error'), error); return; }
       setWalkers(data);
       setSearched(true);
     } finally {
@@ -40,16 +42,16 @@ export default function Walkers() {
 
   const useMyLocation = useCallback(async () => {
     const ok = await requestLocationPermission();
-    if (!ok) { Alert.alert('צריך הרשאת מיקום', 'אפשר גישה למיקום כדי למצוא מטיילים קרובים.'); return; }
+    if (!ok) { Alert.alert(t('walkers.needLocationTitle'), t('walkers.needLocationBody')); return; }
     const c = await getCurrentCoords();
-    if (!c) { Alert.alert('אין מיקום', 'לא הצלחנו לקבל מיקום.'); return; }
+    if (!c) { Alert.alert(t('walkers.noLocationTitle'), t('walkers.noLocationBody')); return; }
     setCenter(c);
     search(c, radiusM);
   }, [radiusM, search]);
 
   async function onSearchCity() {
     const c = await geocodeCity(cityQ);
-    if (!c) { Alert.alert('לא נמצא', 'לא מצאנו את המקום הזה.'); return; }
+    if (!c) { Alert.alert(t('walkers.notFoundTitle'), t('walkers.notFoundBody')); return; }
     setCenter(c);
     search(c, radiusM);
   }
@@ -68,32 +70,32 @@ export default function Walkers() {
 
   async function handleMessage(walker: Walker) {
     const { data, error } = await startConversation(walker.user_id);
-    if (error || !data) { Alert.alert('שגיאה', error ?? 'שגיאה לא ידועה'); return; }
-    router.push(`/(app)/chat/${data}?name=${encodeURIComponent(walker.display_name ?? 'מטייל')}`);
+    if (error || !data) { Alert.alert(t('walkers.error'), error ?? t('walkers.unknownError')); return; }
+    router.push(`/(app)/chat/${data}?name=${encodeURIComponent(walker.display_name ?? t('walkers.walkerFallback'))}`);
   }
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: 'מטיילי כלבים 🦮' }} />
+      <Stack.Screen options={{ title: t('walkers.screenTitle') }} />
 
       <View style={styles.controls}>
         <View style={styles.searchRow}>
           <View style={{ flex: 1 }}>
-            <CityPicker value={cityQ} onChange={setCityQ} placeholder="חפש עיר או כתובת…" onSubmit={onSearchCity} />
+            <CityPicker value={cityQ} onChange={setCityQ} placeholder={t('walkers.searchPlaceholder')} onSubmit={onSearchCity} />
           </View>
-          <Pressable style={styles.searchBtn} onPress={onSearchCity}>
-            <Text style={styles.searchBtnText}>חפש</Text>
+          <Pressable style={styles.searchBtn} onPress={onSearchCity} accessibilityRole="button" accessibilityLabel={t('walkers.search')}>
+            <Text style={styles.searchBtnText}>{t('walkers.search')}</Text>
           </Pressable>
         </View>
 
-        <Pressable style={styles.locBtn} onPress={useMyLocation}>
-          <Text style={styles.locBtnText}>📍 השתמש במיקום שלי</Text>
+        <Pressable style={styles.locBtn} onPress={useMyLocation} accessibilityRole="button" accessibilityLabel={t('walkers.useMyLocation')}>
+          <Text style={styles.locBtnText}>📍 {t('walkers.useMyLocation')}</Text>
         </Pressable>
 
         <View style={styles.radiusRow}>
           {RADII.map((r) => (
-            <Pressable key={r.m} onPress={() => onPickRadius(r.m)} style={[styles.chip, radiusM === r.m && styles.chipOn]}>
-              <Text style={[styles.chipText, radiusM === r.m && styles.chipTextOn]}>{r.label}</Text>
+            <Pressable key={r.m} onPress={() => onPickRadius(r.m)} accessibilityRole="button" accessibilityLabel={`${r.km} ${t('walkers.km')}`} style={[styles.chip, radiusM === r.m && styles.chipOn]}>
+              <Text style={[styles.chipText, radiusM === r.m && styles.chipTextOn]}>{`${r.km} ${t('walkers.km')}`}</Text>
             </Pressable>
           ))}
         </View>
@@ -114,15 +116,15 @@ export default function Walkers() {
                 <View style={styles.cardInfo}>
                   <Text style={styles.name}>{walker.display_name}</Text>
                   <Text style={styles.cityText}>
-                    📍 {walker.distance_m != null ? `${(walker.distance_m / 1000).toFixed(1)} ק״מ ממך` : (walker.city ?? '')}
+                    📍 {walker.distance_m != null ? `${(walker.distance_m / 1000).toFixed(1)} ${t('walkers.kmAway')}` : (walker.city ?? '')}
                   </Text>
                   <Text style={styles.rating}>
-                    {walker.rating_count > 0 ? `⭐ ${walker.avg_stars} (${walker.rating_count})` : 'חדש'}
+                    {walker.rating_count > 0 ? `⭐ ${walker.avg_stars} (${walker.rating_count})` : t('walkers.new')}
                   </Text>
                 </View>
               </View>
-              <Pressable style={styles.msgBtn} onPress={() => handleMessage(walker)}>
-                <Text style={styles.msgBtnText}>שלח הודעה 💬</Text>
+              <Pressable style={styles.msgBtn} onPress={() => handleMessage(walker)} accessibilityRole="button" accessibilityLabel={t('walkers.sendMessage')}>
+                <Text style={styles.msgBtnText}>{t('walkers.sendMessage')} 💬</Text>
               </Pressable>
             </View>
           )}
@@ -133,7 +135,7 @@ export default function Walkers() {
           removeClippedSubviews
           ListEmptyComponent={
             <Text style={styles.empty}>
-              {searched ? 'אין מטיילים בטווח שבחרת. נסה מרחק גדול יותר.' : 'בחר מיקום כדי למצוא מטיילים קרובים.'}
+              {searched ? t('walkers.emptySearched') : t('walkers.emptyInitial')}
             </Text>
           }
         />

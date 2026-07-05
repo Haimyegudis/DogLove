@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../../../src/state/AuthContext';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import { listHealth, addHealth, deleteHealth } from '../../../src/services/health';
 import { HealthRecord, HEALTH_KINDS, HealthKind } from '../../../src/types/health';
 import { colors, font, radius, shadow } from '../../../src/theme';
@@ -36,6 +37,7 @@ function kindColors(kind: HealthKind): { bg: string; border: string; text: strin
 
 export default function DogHealthScreen() {
   const { dogId } = useLocalSearchParams<{ dogId: string }>();
+  const { t } = useI18n();
   const { session } = useAuth();
   const ownerId = session!.user.id;
 
@@ -53,8 +55,9 @@ export default function DogHealthScreen() {
 
   const loadRecords = useCallback(async () => {
     setLoading(true);
-    const { data } = await listHealth(dogId);
-    setRecords(data);
+    const { data, error } = await listHealth(dogId);
+    if (error) Alert.alert(t('dogHealth.error'), error);
+    else setRecords(data);
     setLoading(false);
   }, [dogId]);
 
@@ -69,7 +72,7 @@ export default function DogHealthScreen() {
 
   async function onSave() {
     if (!label.trim()) {
-      Alert.alert('שדה חסר', 'יש להזין תיאור/שם הרשומה');
+      Alert.alert(t('dogHealth.missingField'), t('dogHealth.enterLabel'));
       return;
     }
     setSaving(true);
@@ -83,7 +86,7 @@ export default function DogHealthScreen() {
     );
     setSaving(false);
     if (error) {
-      Alert.alert('שגיאה', error);
+      Alert.alert(t('dogHealth.error'), error);
       return;
     }
     await loadRecords();
@@ -96,14 +99,14 @@ export default function DogHealthScreen() {
   }
 
   function onDelete(id: string) {
-    Alert.alert('מחיקת רשומה', 'האם למחוק את הרשומה?', [
-      { text: 'ביטול', style: 'cancel' },
+    Alert.alert(t('dogHealth.deleteTitle'), t('dogHealth.deleteConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'מחק',
+        text: t('dogHealth.delete'),
         style: 'destructive',
         onPress: async () => {
           const { error } = await deleteHealth(id);
-          if (error) { Alert.alert('שגיאה', error); return; }
+          if (error) { Alert.alert(t('dogHealth.error'), error); return; }
           await loadRecords();
         },
       },
@@ -112,23 +115,25 @@ export default function DogHealthScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'בריאות וחיסונים', headerBackTitle: 'חזור' }} />
+      <Stack.Screen options={{ title: t('dogHealth.title'), headerBackTitle: t('common.back') }} />
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
           {/* Add record toggle button */}
           <Pressable
             onPress={() => setShowForm((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={showForm ? t('common.cancel') : t('dogHealth.addRecord')}
             style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
           >
-            <Text style={styles.addBtnText}>{showForm ? '✕ ביטול' : '+ הוסף רשומה'}</Text>
+            <Text style={styles.addBtnText}>{showForm ? '✕ ' + t('common.cancel') : t('dogHealth.addRecord')}</Text>
           </Pressable>
 
           {/* Form */}
           {showForm && (
             <View style={[styles.formCard, shadow.card]}>
               {/* Kind chips */}
-              <Text style={styles.fieldLabel}>סוג רשומה</Text>
+              <Text style={styles.fieldLabel}>{t('dogHealth.kindLabel')}</Text>
               <View style={styles.kindRow}>
                 {HEALTH_KINDS.map((k) => {
                   const kc = kindColors(k.value);
@@ -137,6 +142,8 @@ export default function DogHealthScreen() {
                     <Pressable
                       key={k.value}
                       onPress={() => setKind(k.value)}
+                      accessibilityRole="button"
+                      accessibilityLabel={k.label}
                       style={[
                         styles.kindChip,
                         { borderColor: kc.border, backgroundColor: selected ? kc.bg : colors.cream },
@@ -151,24 +158,26 @@ export default function DogHealthScreen() {
               </View>
 
               {/* Label input */}
-              <Text style={styles.fieldLabel}>תיאור / שם *</Text>
+              <Text style={styles.fieldLabel}>{t('dogHealth.labelField')}</Text>
               <TextInput
                 style={styles.input}
                 value={label}
                 onChangeText={setLabel}
-                placeholder="לדוגמה: חיסון כלבת"
+                placeholder={t('dogHealth.labelPlaceholder')}
                 placeholderTextColor={colors.inkSoft}
                 textAlign="right"
               />
 
               {/* Date picker */}
-              <Text style={styles.fieldLabel}>תאריך (אופציונלי)</Text>
+              <Text style={styles.fieldLabel}>{t('dogHealth.dateOptional')}</Text>
               <Pressable
                 onPress={() => setShowPicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('dogHealth.selectDate')}
                 style={styles.dateBtn}
               >
                 <Text style={styles.dateBtnText}>
-                  {dateObj ? formatDate(dateObj) : 'בחר תאריך'}
+                  {dateObj ? formatDate(dateObj) : t('dogHealth.selectDate')}
                 </Text>
               </Pressable>
               {showPicker && (
@@ -181,12 +190,12 @@ export default function DogHealthScreen() {
               )}
 
               {/* Notes input */}
-              <Text style={styles.fieldLabel}>הערות (אופציונלי)</Text>
+              <Text style={styles.fieldLabel}>{t('dogHealth.notesOptional')}</Text>
               <TextInput
                 style={[styles.input, styles.multiline]}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="הערות נוספות..."
+                placeholder={t('dogHealth.notesPlaceholder')}
                 placeholderTextColor={colors.inkSoft}
                 textAlign="right"
                 multiline
@@ -196,18 +205,20 @@ export default function DogHealthScreen() {
               <Pressable
                 onPress={onSave}
                 disabled={saving}
+                accessibilityRole="button"
+                accessibilityLabel={t('dogHealth.save')}
                 style={({ pressed }) => [styles.saveBtn, pressed && styles.pressed]}
               >
-                <Text style={styles.saveBtnText}>{saving ? 'שומר…' : 'שמירה'}</Text>
+                <Text style={styles.saveBtnText}>{saving ? t('dogHealth.saving') : t('dogHealth.save')}</Text>
               </Pressable>
             </View>
           )}
 
           {/* Records list */}
           {loading ? (
-            <Text style={styles.emptyText}>טוען…</Text>
+            <Text style={styles.emptyText}>{t('dogHealth.loading')}</Text>
           ) : records.length === 0 ? (
-            <Text style={styles.emptyText}>אין רשומות בריאות עדיין</Text>
+            <Text style={styles.emptyText}>{t('dogHealth.empty')}</Text>
           ) : (
             records.map((rec) => {
               const kc = kindColors(rec.kind);
@@ -218,8 +229,8 @@ export default function DogHealthScreen() {
                     <View style={[styles.kindBadge, { backgroundColor: kc.bg, borderColor: kc.border }]}>
                       <Text style={[styles.kindBadgeText, { color: kc.text }]}>{kindMeta?.label}</Text>
                     </View>
-                    <Pressable onPress={() => onDelete(rec.id)} style={styles.deleteBtn}>
-                      <Text style={styles.deleteText}>מחק</Text>
+                    <Pressable onPress={() => onDelete(rec.id)} style={styles.deleteBtn} accessibilityRole="button" accessibilityLabel={t('dogHealth.delete')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Text style={styles.deleteText}>{t('dogHealth.delete')}</Text>
                     </Pressable>
                   </View>
                   <Text style={styles.recordLabel}>{rec.label}</Text>

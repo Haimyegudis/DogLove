@@ -4,9 +4,9 @@ import { Stack, useRouter } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
 import { discoverOwners, swipeOwner, type DiscoverOwner } from '../../src/services/dating';
 import { GENDER_OPTIONS } from '../../src/types/profile';
+import { useI18n } from '../../src/i18n/LanguageContext';
 import { colors, font, radius, shadow } from '../../src/theme';
 
-const INTENT_LABEL: Record<string, string> = { friends: 'חברים 🐾', dates: 'דייטים ❤️', walks: 'טיולים 🦮' };
 const genderLabel = (g: string | null) => GENDER_OPTIONS.find((o) => o.value === g)?.label ?? '';
 
 const PAGE = 30;
@@ -14,6 +14,13 @@ const LOW_WATER = 3; // fetch more when this few remain
 
 export default function DiscoverPeople() {
   const router = useRouter();
+  const { t } = useI18n();
+  const intentLabel = (i: string) => {
+    if (i === 'friends') return t('discover.intentFriends');
+    if (i === 'dates') return t('discover.intentDates');
+    if (i === 'walks') return t('discover.intentWalks');
+    return i;
+  };
   const [deck, setDeck] = useState<DiscoverOwner[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -21,7 +28,7 @@ export default function DiscoverPeople() {
 
   const load = useCallback(async (replace: boolean) => {
     const { data, error } = await discoverOwners(PAGE);
-    if (error) { Alert.alert('שגיאה', error); setLoading(false); return; }
+    if (error) { Alert.alert(t('discover.error'), error); setLoading(false); return; }
     if (data.length === 0) setDone(true);
     setDeck((prev) => {
       if (replace) return data;
@@ -49,15 +56,15 @@ export default function DiscoverPeople() {
     const target = current;
     const { data, error } = await swipeOwner(target.user_id, like);
     setBusy(false);
-    if (error) { Alert.alert('שגיאה', error); return; }
+    if (error) { Alert.alert(t('discover.error'), error); return; }
     advance();
     if (like && data?.matched && data.conversation_id) {
       const convId = data.conversation_id;
-      Alert.alert('יש התאמה! 🎉', `אתם והכלבים מחכים להיכרות עם ${target.display_name ?? 'בעל הכלב'}`, [
-        { text: 'אחר כך', style: 'cancel' },
+      Alert.alert(t('discover.matchTitle'), t('discover.matchBodyPrefix') + (target.display_name ?? t('discover.ownerFallbackLong')), [
+        { text: t('discover.later'), style: 'cancel' },
         {
-          text: 'פתח צ׳אט 💬',
-          onPress: () => router.push(`/(app)/chat/${convId}?name=${encodeURIComponent(target.display_name ?? 'התאמה')}`),
+          text: t('discover.openChat'),
+          onPress: () => router.push(`/(app)/chat/${convId}?name=${encodeURIComponent(target.display_name ?? t('discover.matchFallbackName'))}`),
         },
       ]);
     }
@@ -65,20 +72,20 @@ export default function DiscoverPeople() {
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: 'הכרויות 💞' }} />
+      <Stack.Screen options={{ title: t('discover.title') }} />
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={colors.rose} /></View>
       ) : !current ? (
         <View style={styles.center}>
           <Text style={styles.emptyEmoji}>🐶💔</Text>
-          <Text style={styles.emptyTitle}>אין כרגע פרופילים חדשים</Text>
-          <Text style={styles.emptyText}>נסו שוב מאוחר יותר — חברים חדשים מצטרפים כל הזמן.</Text>
+          <Text style={styles.emptyTitle}>{t('discover.emptyTitle')}</Text>
+          <Text style={styles.emptyText}>{t('discover.emptyText')}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={[styles.card, shadow.card]}>
             <Avatar uri={current.photo_url} fallback="🧑" size={140} />
-            <Text style={styles.name}>{current.display_name ?? 'בעל כלב'}</Text>
+            <Text style={styles.name}>{current.display_name ?? t('discover.ownerFallback')}</Text>
             <Text style={styles.meta}>
               {current.age ? `${current.age}` : ''}
               {current.gender ? ` · ${genderLabel(current.gender)}` : ''}
@@ -88,7 +95,7 @@ export default function DiscoverPeople() {
             {current.intent && current.intent.length > 0 ? (
               <View style={styles.intentRow}>
                 {current.intent.map((i) => (
-                  <Text key={i} style={styles.intentTag}>{INTENT_LABEL[i] ?? i}</Text>
+                  <Text key={i} style={styles.intentTag}>{intentLabel(i)}</Text>
                 ))}
               </View>
             ) : null}
@@ -97,8 +104,8 @@ export default function DiscoverPeople() {
               <View style={styles.dogRow}>
                 <Avatar uri={current.top_dog_photo} fallback="🐶" size={48} />
                 <View style={styles.dogText}>
-                  <Text style={styles.dogLabel}>הכלב/ה שלי</Text>
-                  <Text style={styles.dogName}>{current.top_dog_name ?? 'כלב חמוד'} 🐾</Text>
+                  <Text style={styles.dogLabel}>{t('discover.myDog')}</Text>
+                  <Text style={styles.dogName}>{current.top_dog_name ?? t('discover.cuteDog')} 🐾</Text>
                 </View>
               </View>
             ) : null}
@@ -109,17 +116,21 @@ export default function DiscoverPeople() {
               style={[styles.actionBtn, styles.skipBtn]}
               disabled={busy}
               onPress={() => onSwipe(false)}
+              accessibilityRole="button"
+              accessibilityLabel={t('discover.skip')}
             >
               <Text style={styles.skipEmoji}>❌</Text>
-              <Text style={styles.skipLabel}>דלג</Text>
+              <Text style={styles.skipLabel}>{t('discover.skip')}</Text>
             </Pressable>
             <Pressable
               style={[styles.actionBtn, styles.likeBtn]}
               disabled={busy}
               onPress={() => onSwipe(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t('discover.like')}
             >
               <Text style={styles.likeEmoji}>❤️</Text>
-              <Text style={styles.likeLabel}>לייק</Text>
+              <Text style={styles.likeLabel}>{t('discover.like')}</Text>
             </Pressable>
           </View>
         </ScrollView>

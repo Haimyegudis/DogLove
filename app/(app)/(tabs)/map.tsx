@@ -10,9 +10,9 @@ import { geocodeCity } from '../../../src/services/geocode';
 import { startWalk, endWalk, updateWalkLocation, nearbyDogs } from '../../../src/services/walk';
 import { subscribeActiveWalks } from '../../../src/services/walkRealtime';
 import { amIPremium } from '../../../src/services/premium';
-import { setHomeLocation } from '../../../src/services/feed';
 import { listMyDogs } from '../../../src/services/dogs';
 import { useAuth } from '../../../src/state/AuthContext';
+import { useI18n } from '../../../src/i18n/LanguageContext';
 import WalkControls from '../../../src/components/WalkControls';
 import type { Coords, NearbyDog } from '../../../src/types/walk';
 
@@ -26,6 +26,7 @@ function haversine(a: Coords, b: Coords): number {
 
 export default function MapScreen() {
   const { session } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const userId = session!.user.id;
   const [premium, setPremium] = useState(false);
@@ -63,17 +64,17 @@ export default function MapScreen() {
     // Browsing other areas/cities is a Premium perk; free users stay local.
     if (!premium) {
       Alert.alert(
-        'תכונת Premium ⭐',
-        'חיפוש כלבים בערים ואזורים אחרים זמין למשתמשי Premium. לשדרג?',
+        t('map.premiumTitle'),
+        t('map.premiumMsg'),
         [
-          { text: 'לא עכשיו', style: 'cancel' },
-          { text: 'שדרג', onPress: () => router.push('/(app)/premium') },
+          { text: t('map.notNow'), style: 'cancel' },
+          { text: t('map.upgrade'), onPress: () => router.push('/(app)/premium') },
         ],
       );
       return;
     }
     const c = await geocodeCity(cityQ);
-    if (!c) { Alert.alert('לא נמצא', 'לא מצאנו את המקום הזה.'); return; }
+    if (!c) { Alert.alert(t('map.notFound'), t('map.notFoundMsg')); return; }
     setSearchCenter(c);
     setFocusNonce((n) => n + 1);
     refreshNearby(c, radiusM);
@@ -82,11 +83,11 @@ export default function MapScreen() {
   useEffect(() => {
     (async () => {
       const ok = await requestLocationPermission();
-      if (!ok) { Alert.alert('צריך הרשאת מיקום', 'כדי להראות כלבים קרובים, אפשר גישה למיקום.'); return; }
+      if (!ok) { Alert.alert(t('map.locationNeeded'), t('map.locationNeededMsg')); return; }
       const last = await getLastKnownCoords();  // instant first center
       if (last) setCoords(last);
       const c = await getCurrentCoords();        // precise fix
-      if (c) { setCoords(c); setHomeLocation(c.lat, c.lng); } // stamp home for distance-based feed
+      if (c) { setCoords(c); } // home area is stamped only via the opt-in Privacy toggle
     })();
     return () => {
       watcher.current?.remove();
@@ -123,14 +124,14 @@ export default function MapScreen() {
   async function actuallyStartWalk() {
     try {
       const { data: myDogs } = await listMyDogs(userId);
-      if (myDogs.length === 0) { Alert.alert('אין כלב', 'הוסף קודם פרופיל כלב כדי לצאת לטיול.'); return; }
+      if (myDogs.length === 0) { Alert.alert(t('map.noDog'), t('map.noDogMsg')); return; }
       const c = coords ?? (await getCurrentCoords());
-      if (!c) { Alert.alert('אין מיקום', 'לא הצלחנו לקבל מיקום.'); return; }
+      if (!c) { Alert.alert(t('map.noLocation'), t('map.noLocationMsg')); return; }
       const dogId = myDogs[0].id;
       distanceRef.current = 0;
       lastWalkCoordRef.current = c;
       const { error } = await startWalk(dogId, c);
-      if (error) { Alert.alert('שגיאה', error); return; }
+      if (error) { Alert.alert(t('map.error'), error); return; }
       walkDogId.current = dogId;
       setWalking(true);
       refreshNearby(c, radiusM); // show my dog on the map immediately, don't wait for realtime
@@ -163,12 +164,12 @@ export default function MapScreen() {
       if (!consentGiven) {
         toggling.current = false; // don't leave toggling stuck while alert is shown
         Alert.alert(
-          'שיתוף מיקום',
-          'בזמן הליכה, משתמשים קרובים יראו את מיקום הכלב שלך. ברגע שתסיים — זה נפסק.',
+          t('map.consentTitle'),
+          t('map.consentMsg'),
           [
-            { text: 'ביטול', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
             {
-              text: 'הבנתי, התחל',
+              text: t('map.consentStart'),
               onPress: async () => {
                 await AsyncStorage.setItem('doglove.walkConsent.v1', 'true');
                 toggling.current = true;
@@ -194,22 +195,22 @@ export default function MapScreen() {
         <View style={[styles.searchBar, shadow.soft]}>
           <TextInput
             style={styles.searchInput}
-            placeholder="חפש עיר או מקום…"
+            placeholder={t('map.searchPlaceholder')}
             placeholderTextColor={colors.inkCoolSoft}
             value={cityQ}
             onChangeText={setCityQ}
             onSubmitEditing={onSearchCity}
             returnKeyType="search"
           />
-          <Pressable onPress={onSearchCity} style={styles.searchGo}><Text style={styles.searchGoText}>🔎</Text></Pressable>
+          <Pressable onPress={onSearchCity} accessibilityRole="button" accessibilityLabel={t('map.searchBtn')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.searchGo}><Text style={styles.searchGoText}>🔎</Text></Pressable>
         </View>
         <View style={styles.topActions} pointerEvents="box-none">
           {searchCenter ? (
-            <Pressable onPress={onFocusMe} style={[styles.pill, shadow.soft]}>
-              <Text style={styles.pillText}>↩︎ חזרה אליי</Text>
+            <Pressable onPress={onFocusMe} accessibilityRole="button" accessibilityLabel={t('map.backToMe')} style={[styles.pill, shadow.soft]}>
+              <Text style={styles.pillText}>↩︎ {t('map.backToMe')}</Text>
             </Pressable>
           ) : <View />}
-          <Pressable testID="focus-me" onPress={onFocusMe} style={[styles.focusBtn, shadow.soft]}>
+          <Pressable testID="focus-me" onPress={onFocusMe} accessibilityRole="button" accessibilityLabel={t('map.focusMe')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={[styles.focusBtn, shadow.soft]}>
             <Text style={styles.focusIcon}>📍</Text>
           </Pressable>
         </View>

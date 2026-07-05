@@ -11,7 +11,7 @@ import { colors, font, radius, gradients } from '../../../src/theme';
 
 function Stat({ n, label, tint, bg, icon, onPress }: { n: number; label: string; tint: string; bg: string; icon: string; onPress?: () => void }) {
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [styles.stat, pressed && onPress && styles.pressed]}>
+    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.stat, pressed && onPress && styles.pressed]}>
       <View style={[styles.statIcon, { backgroundColor: bg }]}><Text style={{ fontSize: 18 }}>{icon}</Text></View>
       <Text style={[styles.statN, { color: tint }]}>{n}</Text>
       <Text style={styles.statLabel}>{label}</Text>
@@ -21,7 +21,7 @@ function Stat({ n, label, tint, bg, icon, onPress }: { n: number; label: string;
 
 function Feature({ title, sub, bg, icon, onPress }: { title: string; sub: string; bg: string; icon: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.feature, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={title} style={({ pressed }) => [styles.feature, pressed && styles.pressed]}>
       <View style={[styles.featureIcon, { backgroundColor: bg }]}><Text style={{ fontSize: 22 }}>{icon}</Text></View>
       <Text style={styles.featureTitle}>{title}</Text>
       <Text style={styles.featureSub}>{sub}</Text>
@@ -39,12 +39,14 @@ export default function Home() {
   useFocusEffect(useCallback(() => {
     let active = true;
     (async () => {
-      const w = await supabase.from('walk_sessions').select('id', { count: 'exact', head: true }).eq('is_active', true);
-      const d = await supabase.from('dogs').select('id', { count: 'exact', head: true });
+      // walk_sessions/dogs are no longer client-readable across users; counts
+      // come from the coarse community_counts RPC (fresh, discoverable only).
+      const counts = await supabase.rpc('community_counts').single();
       const inc = await listIncoming();
       if (!active) return;
-      setWalkers(w.count ?? 0);
-      setDogs(d.count ?? 0);
+      const row = counts.data as { active_walkers: number; community_dogs: number } | null;
+      setWalkers(row?.active_walkers ?? 0);
+      setDogs(row?.community_dogs ?? 0);
       setPending((inc.data || []).filter((r) => r.status === 'pending').length);
     })();
     return () => { active = false; };
@@ -62,7 +64,7 @@ export default function Home() {
           <LinearGradient colors={gradients.hero as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
             <Text style={styles.heroPaws}>🐾</Text>
             <Text style={styles.heroPaws2}>🐾</Text>
-            <Text style={styles.heroKicker}>שעת הזהב בפארק</Text>
+            <Text style={styles.heroKicker}>{t('home.heroKicker')}</Text>
             <Text style={styles.heroTitle}>{t('home.heroTitle')}</Text>
             <Text style={styles.heroSub}>{t('home.heroSub')}</Text>
             <Pressable style={styles.heroBtn} onPress={() => router.push('/(app)/(tabs)/map')}>
@@ -71,9 +73,9 @@ export default function Home() {
           </LinearGradient>
 
           <View style={styles.statsRow}>
-            <Stat n={walkers} label="מטיילים פעילים" tint={colors.green} bg={colors.greenSoft} icon="🐾" onPress={() => router.push('/(app)/active-walkers')} />
-            <Stat n={dogs} label="כלבים בקהילה" tint={colors.purple} bg={colors.purpleSoft} icon="🐕" onPress={() => router.push('/(app)/browse')} />
-            <Stat n={pending} label="בקשות ממתינות" tint={colors.rose} bg={colors.roseSoft} icon="❤️" onPress={() => router.push('/(app)/(tabs)/playdates')} />
+            <Stat n={walkers} label={t('home.statWalkers')} tint={colors.green} bg={colors.greenSoft} icon="🐾" onPress={() => router.push('/(app)/active-walkers')} />
+            <Stat n={dogs} label={t('home.statDogs')} tint={colors.purple} bg={colors.purpleSoft} icon="🐕" onPress={() => router.push('/(app)/browse')} />
+            <Stat n={pending} label={t('home.statPending')} tint={colors.rose} bg={colors.roseSoft} icon="❤️" onPress={() => router.push('/(app)/(tabs)/playdates')} />
           </View>
 
           <Text style={styles.section}>{t('home.section')}</Text>
@@ -91,8 +93,8 @@ export default function Home() {
             <Feature title={t('card.badges.title')} sub={t('card.badges.sub')} bg={colors.roseSoft} icon="🏅" onPress={() => router.push('/(app)/badges')} />
             <Feature title={t('card.places.title')} sub={t('card.places.sub')} bg={colors.purpleSoft} icon="🏥" onPress={() => router.push('/(app)/places')} />
             <Feature title={t('card.premium.title')} sub={t('card.premium.sub')} bg={colors.roseSoft} icon="⭐" onPress={() => router.push('/(app)/premium')} />
-            <Feature title="הכרויות" sub="הכר אנשים דרך הכלב" bg={colors.roseSoft} icon="💞" onPress={() => router.push('/(app)/discover-people')} />
-            <Feature title="מי בפארק עכשיו" sub="צ׳ק-אין ומפגשים" bg={colors.greenSoft} icon="🌳" onPress={() => router.push('/(app)/park-checkins')} />
+            <Feature title={t('card.discover.title')} sub={t('card.discover.sub')} bg={colors.roseSoft} icon="💞" onPress={() => router.push('/(app)/discover-people')} />
+            <Feature title={t('card.parkNow.title')} sub={t('card.parkNow.sub')} bg={colors.greenSoft} icon="🌳" onPress={() => router.push('/(app)/park-checkins')} />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -124,9 +126,11 @@ const styles = StyleSheet.create({
 
   section: { fontFamily: font.display, fontSize: 19, color: colors.brandDark, textAlign: 'right', marginTop: 4 },
   grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 12 },
-  feature: { width: '31%', aspectRatio: 1, backgroundColor: colors.white, borderRadius: 20, padding: 11, gap: 5, justifyContent: 'center', borderWidth: 1, borderColor: colors.lineCool },
+  // minHeight (not a fixed square) so 2–3 line explanations are never clipped;
+  // wrapped-row items stretch to the tallest card so the grid stays aligned.
+  feature: { width: '31%', minHeight: 124, backgroundColor: colors.white, borderRadius: 20, padding: 11, gap: 5, justifyContent: 'center', borderWidth: 1, borderColor: colors.lineCool },
   featureIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   featureTitle: { fontFamily: font.bold, fontSize: 13, color: colors.brandDark, textAlign: 'right' },
-  featureSub: { fontFamily: font.regular, fontSize: 10, lineHeight: 13, color: colors.inkCoolSoft, textAlign: 'right' },
+  featureSub: { fontFamily: font.regular, fontSize: 10, lineHeight: 14, color: colors.inkCoolSoft, textAlign: 'right' },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
 });

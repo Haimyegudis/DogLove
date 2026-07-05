@@ -6,13 +6,17 @@ export async function listConversations() {
   return { data: (data as ConversationRow[]) ?? [], error: error?.message ?? null };
 }
 
-export async function listMessages(conversationId: string) {
+export async function listMessages(conversationId: string, limit = 100) {
+  // Load the most recent `limit` messages (newest-first from the DB), then
+  // reverse to ascending for display — avoids loading a year-long thread at once.
   const { data, error } = await supabase
     .from('messages')
     .select('id, conversation_id, sender_id, body, created_at')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
-  return { data: (data as Message[]) ?? [], error: error?.message ?? null };
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  const rows = ((data as Message[]) ?? []).slice().reverse();
+  return { data: rows, error: error?.message ?? null };
 }
 
 export async function sendMessage(conversationId: string, senderId: string, body: string) {

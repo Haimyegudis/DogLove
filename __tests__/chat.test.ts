@@ -1,5 +1,6 @@
 jest.mock('../src/lib/supabase', () => {
-  const order = jest.fn();
+  const limit = jest.fn();
+  const order = jest.fn(() => ({ limit }));
   const eq = jest.fn(() => ({ order }));
   const select = jest.fn(() => ({ eq }));
   const insert = jest.fn();
@@ -9,7 +10,7 @@ jest.mock('../src/lib/supabase', () => {
   const channel = jest.fn(() => ({ on }));
   const removeChannel = jest.fn();
   return { supabase: { from: jest.fn(() => ({ select, insert })), rpc, channel, removeChannel,
-    __m: { order, eq, select, insert, rpc, on, subscribe, channel, removeChannel } } };
+    __m: { limit, order, eq, select, insert, rpc, on, subscribe, channel, removeChannel } } };
 });
 import { listConversations, listMessages, sendMessage, subscribeMessages } from '../src/services/chat';
 import { supabase } from '../src/lib/supabase';
@@ -24,11 +25,14 @@ test('listConversations calls list_conversations rpc', async () => {
   expect(res.data).toHaveLength(1);
 });
 
-test('listMessages selects by conversation ordered by time', async () => {
-  m.order.mockResolvedValue({ data: [{ id: 'm1' }], error: null });
+test('listMessages selects recent messages by conversation, ascending for display', async () => {
+  m.limit.mockResolvedValue({ data: [{ id: 'm2' }, { id: 'm1' }], error: null });
   const res = await listMessages('c1');
   expect(m.eq).toHaveBeenCalledWith('conversation_id', 'c1');
-  expect(res.data).toHaveLength(1);
+  expect(m.order).toHaveBeenCalledWith('created_at', { ascending: false });
+  expect(m.limit).toHaveBeenCalledWith(100);
+  // returned reversed to ascending order
+  expect(res.data.map((x: any) => x.id)).toEqual(['m1', 'm2']);
 });
 
 test('sendMessage inserts body + sender + conversation', async () => {
